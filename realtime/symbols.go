@@ -129,13 +129,10 @@ func (l *Symbols) UpdateSymbols(symbols []string) {
 			}
 		}
 
-		logrus.Infof("Pre-loading data for %v...", addedSymbols)
 		latestBars := l.getLatestBars(addedSymbols)
 		latestQuotes := l.getLatestQuotes(addedSymbols)
 		latestTrades := l.getLatestTrades(addedSymbols)
-		previousDailyBars := l.getPreviousDailyBars(addedSymbols)
-
-		logrus.Infof("Pre-loading data for %v...DONE", addedSymbols)
+		//previousDailyBars := l.getPreviousDailyBars(addedSymbols)
 		//intradayBars := l.getIntradayBars(addedSymbols)
 		//ytdDailyBars := l.getYtdDailyBars(addedSymbols)
 
@@ -143,11 +140,11 @@ func (l *Symbols) UpdateSymbols(symbols []string) {
 
 		for _, symbol := range addedSymbols {
 			l.symbolMap[symbol] = &Symbol{
-				Asset:        l.assetRepository.Get(symbol),
-				Bar:          latestBars[symbol],
-				Trade:        latestTrades[symbol],
-				Quote:        latestQuotes[symbol],
-				PrevDailyBar: previousDailyBars[symbol],
+				Asset: l.assetRepository.Get(symbol),
+				Bar:   latestBars[symbol],
+				Trade: latestTrades[symbol],
+				Quote: latestQuotes[symbol],
+				//PrevDailyBar: previousDailyBars[symbol],
 				//IntradayBars: intradayBars[symbol],
 				//YtdDailyBars: ytdDailyBars[symbol],
 			}
