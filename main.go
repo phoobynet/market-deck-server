@@ -63,14 +63,13 @@ func main() {
 	calendars.NewCalendarDayLive(calendarDayUpdateChan, alpacaClient, calendarDayRepository)
 
 	go func() {
-		for realtimeSymbols := range realtimeSymbolsChan {
-			server.Publish(events.RealtimeSymbols, realtimeSymbols)
-		}
-	}()
-
-	go func() {
-		for calendarDayUpdate := range calendarDayUpdateChan {
-			server.Publish(events.CalendarDayUpdate, calendarDayUpdate)
+		for {
+			select {
+			case realtimeSymbols := <-realtimeSymbolsChan:
+				server.Publish(events.RealtimeSymbols, realtimeSymbols)
+			case calendarDayUpdate := <-calendarDayUpdateChan:
+				server.Publish(events.CalendarDayUpdate, calendarDayUpdate)
+			}
 		}
 	}()
 

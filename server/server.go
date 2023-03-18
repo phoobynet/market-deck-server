@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"github.com/phoobynet/market-deck-server/assets"
 	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/realtime"
 	"github.com/rs/cors"
@@ -26,6 +27,7 @@ func NewServer(
 	dist embed.FS,
 	realtimeSymbols *realtime.Symbols,
 	deckRepository *decks.DeckRepository,
+	assetRepository *assets.AssetRepository,
 ) *Server {
 	webServer := &Server{
 		config,
@@ -50,6 +52,21 @@ func NewServer(
 	)
 
 	router.GET("/api/stream", getSSEHandler)
+
+	router.GET(
+		"/api/symbols/query", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			query := r.URL.Query().Get("query")
+
+			if query == "" {
+				_ = writeErr(w, http.StatusBadRequest, fmt.Errorf("query parameter is required"))
+				return
+			}
+
+			results := assetRepository.Search(query)
+
+			_ = writeJSON(w, http.StatusOK, results)
+		},
+	)
 
 	router.POST(
 		"/api/symbols", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

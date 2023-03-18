@@ -5,6 +5,7 @@
 import { Asset } from '@/types'
 import { ref } from 'vue'
 import { debouncedWatch } from '@vueuse/core'
+import { search } from '@/libs/search'
 
 const query = ref<string>('')
 const assets = ref<Asset[]>([])
@@ -14,7 +15,7 @@ const onSearch = async (query: string): Promise<void> => {
   searching.value = true
 
   try {
-    assets.value = await SearchAssets(query)
+    assets.value = await search(query)
   } catch (e) {
     console.log(e)
   } finally {
