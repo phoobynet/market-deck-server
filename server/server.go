@@ -81,13 +81,34 @@ func NewServer(
 			symbols := r.URL.Query().Get("symbols")
 
 			if symbols == "" {
-				_ = writeErr(w, http.StatusBadRequest, fmt.Errorf("symbols parameter is required"))
 				return
 			}
 
 			realtimeSymbols.UpdateSymbols(strings.Split(symbols, ","))
 
 			w.WriteHeader(http.StatusOK)
+		},
+	)
+
+	router.GET(
+		"/api/symbols", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			deck, err := deckRepository.FindByName("default")
+
+			if err != nil {
+				_ = writeErr(w, http.StatusInternalServerError, err)
+				return
+			}
+
+			var symbols []string
+
+			if len(deck.Symbols) > 0 {
+				symbols = strings.Split(deck.Symbols, ",")
+				_ = writeJSON(
+					w, http.StatusOK, map[string]interface{}{
+						"symbols": symbols,
+					},
+				)
+			}
 		},
 	)
 

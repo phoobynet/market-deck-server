@@ -57,6 +57,14 @@ func main() {
 	calendarDayRepository := calendars.NewCalendarDayRepository(database.GetDB(), alpacaClient)
 	deckRepository := decks.NewDeckRepository(database.GetDB())
 
+	if deckRepository.Count() == 0 {
+		_, err := deckRepository.Create("default", []string{})
+
+		if err != nil {
+			logrus.Fatalf("error creating default deck: %v", err)
+		}
+	}
+
 	realtimeSymbolsChan := make(chan map[string]*realtime.Symbol, 100)
 	calendarDayUpdateChan := make(chan calendars.CalendarDayUpdate, 100)
 
@@ -68,6 +76,7 @@ func main() {
 		1*time.Second,
 		calendarDayRepository,
 		assetRepository,
+		deckRepository,
 	)
 
 	calendars.NewCalendarDayLive(calendarDayUpdateChan, alpacaClient, calendarDayRepository)

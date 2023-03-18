@@ -5,11 +5,12 @@
 import DashboardSymbol from '@/routes/dashboard/DashboardSymbol.vue'
 import { useRealtimeSymbolsStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useAssetsStore } from '@/stores/useAssetsStore'
 import Tags from '@/components/Tags.vue'
 import { debouncedWatch } from '@vueuse/core'
 import { updateSymbols } from '@/libs/updateSymbols'
+import { getSymbols } from '@/libs/getSymbols'
 
 const realtimeSymbolsStore = useRealtimeSymbolsStore()
 
@@ -43,11 +44,15 @@ debouncedWatch(tags, async (newValue) => {
   immediate: true,
   debounce: 500,
 })
+
+onMounted(async () => {
+  tags.value = await getSymbols()
+})
 </script>
 
 <template>
   <div
-    class="mx-auto mx-4 mt-2"
+    class="mx-auto mx-2 mt-2 md:mx-4"
     v-if="!loading"
   >
     <Tags
@@ -57,11 +62,16 @@ debouncedWatch(tags, async (newValue) => {
       placeholder="Enter symbol and press Space or Enter"
     />
     <main class="grid grid-cols-6 gap-1 mt-3">
-      <DashboardSymbol
-        :symbol="symbol"
-        v-for="symbol in symbols"
-        :key="symbol"
-      />
+      <transition-group
+        enter-active-class="animate__animated animate__fadeIn animate__faster"
+        leave-active-class="animate__animated animate__fadeOut animate__faster"
+      >
+        <DashboardSymbol
+          :symbol="symbol"
+          v-for="symbol in symbols"
+          :key="symbol"
+        />
+      </transition-group>
     </main>
   </div>
 </template>

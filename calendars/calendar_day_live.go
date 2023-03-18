@@ -109,3 +109,10 @@ func (l *CalendarDayLive) update() {
 	l.calendarDayUpdate.NextMarketDate = nextMarketDate
 	l.calendarDayUpdate.At = now.ToStdTime().UnixMilli()
 }
+
+func (l *CalendarDayLive) Get() CalendarDayUpdate {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	return l.calendarDayUpdate
+}

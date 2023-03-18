@@ -8,6 +8,7 @@ import (
 	"github.com/phoobynet/market-deck-server/assets"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/calendars"
+	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/quotes"
 	"github.com/phoobynet/market-deck-server/trades"
 	"github.com/samber/lo"
@@ -30,6 +31,7 @@ type Symbols struct {
 	barChan               chan stream.Bar
 	calendarDayRepository *calendars.CalendarDayRepository
 	assetRepository       *assets.AssetRepository
+	deckRepository        *decks.DeckRepository
 }
 
 func NewLiveSymbols(
@@ -40,6 +42,7 @@ func NewLiveSymbols(
 	publishInterval time.Duration,
 	calendarDayRepository *calendars.CalendarDayRepository,
 	assetRepository *assets.AssetRepository,
+	deckRepository *decks.DeckRepository,
 ) *Symbols {
 	l := &Symbols{
 		symbolMap:             make(map[string]*Symbol),
@@ -54,6 +57,7 @@ func NewLiveSymbols(
 		barChan:               make(chan stream.Bar, 100_000),
 		calendarDayRepository: calendarDayRepository,
 		assetRepository:       assetRepository,
+		deckRepository:        deckRepository,
 	}
 
 	go func() {
@@ -94,6 +98,12 @@ func (l *Symbols) updateBar(streamBar stream.Bar) {
 }
 
 func (l *Symbols) UpdateSymbols(symbols []string) {
+	_, err := l.deckRepository.UpdateByName("default", symbols)
+
+	if err != nil {
+		logrus.Fatalf("failed to update symbols: %v", err)
+	}
+
 	logrus.Infof("updating symbols: %v...", symbols)
 	l.publishTicker.Stop()
 	defer l.publishTicker.Reset(l.publishInterval)
