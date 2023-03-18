@@ -1,0 +1,27 @@
+import { baseUrl } from '@/libs/baseUrl'
+import { useCalendarDayUpdate } from '@/stores'
+import { CalendarDayUpdate } from '@/types'
+
+export class CalendarDayUpdateListener {
+  private calendarDayUpdateSource?: EventSource
+
+  start () {
+    this.calendarDayUpdateSource = new EventSource(`${baseUrl}/api/stream?stream=calendar_day_update`)
+
+    const calendarDayUpdateStore = useCalendarDayUpdate()
+
+    this.calendarDayUpdateSource.onmessage = (event) => {
+      const { data } = JSON.parse(event.data) as { data: CalendarDayUpdate }
+
+      calendarDayUpdateStore.$patch({ calendarDayUpdate: data })
+    }
+
+    this.calendarDayUpdateSource.onerror = (error) => {
+      console.error(error)
+    }
+  }
+
+  close () {
+    this.calendarDayUpdateSource?.close()
+  }
+}

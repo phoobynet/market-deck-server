@@ -1,0 +1,68 @@
+<script
+  lang="ts"
+  setup
+>
+import { computed } from 'vue'
+import numeral from 'numeral'
+
+const props = defineProps<{
+  amount?: number
+  showSign?: boolean
+  currency?: string
+  sexy?: boolean
+}>()
+
+const formatted = computed(() => {
+  if (!props.amount) {
+    return ''
+  }
+
+  let sign = ''
+  if (props.showSign) {
+    sign = props.amount! > 0
+      ? '+'
+      : '-'
+  }
+
+  return `${props.currency ?? ''}${sign}${numeral(Math.abs(props.amount)).format('0,0.00')}`
+})
+
+const classes = computed(() => {
+  return {
+    'sexy': props.sexy ?? false,
+    'tabular-nums': true,
+  }
+})
+
+const sign = computed(() => {
+  if (!props.amount) {
+    return ''
+  }
+
+  return props.amount! > 0
+    ? '+'
+    : '-'
+})
+</script>
+
+<template>
+  <span
+    :class="classes"
+    :data-sign="sign"
+  >{{ formatted }}</span>
+</template>
+
+<style
+  lang="scss"
+  scoped
+>
+  .sexy {
+    &[data-sign='+'] {
+      @apply text-green-400;
+    }
+
+    &[data-sign='-'] {
+      @apply text-red-400;
+    }
+  }
+</style>
