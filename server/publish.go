@@ -12,10 +12,6 @@ func Publish[T any](messageType events.EmittableEvents, message T) {
 		logrus.Panic("SSE server is not ready")
 	}
 
-	if message == nil {
-		logrus.Panic("cannot publish nil message")
-	}
-
 	jsonData, err := json.Marshal(message)
 
 	if err != nil {

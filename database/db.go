@@ -1,12 +1,12 @@
 package database
 
 import (
+	"github.com/phoobynet/market-deck-server/assets"
+	"github.com/phoobynet/market-deck-server/calendars"
+	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"market-deck/assets"
-	"market-deck/calendars"
-	"market-deck/decks"
 )
 
 var db *gorm.DB

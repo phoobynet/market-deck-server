@@ -75,7 +75,9 @@ func main() {
 
 	server.InitSSE()
 
-	webServer := server.NewServer(config, dist, realTimeSymbols, deckRepository)
+	webServer := server.NewServer(config, dist, realTimeSymbols, deckRepository, assetRepository)
+
+	logrus.Infof("Listening on %d...", config.ServerPort)
 
 	webServer.Listen()
 }

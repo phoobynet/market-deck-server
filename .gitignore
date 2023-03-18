@@ -1,3 +1,7 @@
+# bins/db
+main
+market-deck.db
+
 # Logs
 logs
 *.log

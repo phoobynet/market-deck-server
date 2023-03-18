@@ -12,6 +12,8 @@ export const useRealtimeSymbolsStore = defineStore('realtimeSymbols', {
 
   getters: {
     symbols(state: RealtimeSymbolsState): string[] {
+      if (!state.realtimeSymbols) return []
+
       return Object.keys(state.realtimeSymbols)
     }
   }

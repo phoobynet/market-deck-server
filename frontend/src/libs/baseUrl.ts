@@ -1,7 +1,1 @@
-const {
-  protocol,
-  host,
-  port,
-} = window.location
-
-export const baseUrl = `${protocol}://${host}:${port}`
+export const baseUrl = window.location.origin.replace("5173", "3000")

@@ -1,10 +1,10 @@
 package realtime
 
 import (
-	"market-deck/assets"
-	"market-deck/bars"
-	"market-deck/quotes"
-	"market-deck/trades"
+	"github.com/phoobynet/market-deck-server/assets"
+	"github.com/phoobynet/market-deck-server/bars"
+	"github.com/phoobynet/market-deck-server/quotes"
+	"github.com/phoobynet/market-deck-server/trades"
 )
 
 type Symbol struct {
