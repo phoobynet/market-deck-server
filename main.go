@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"flag"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
@@ -40,6 +41,15 @@ func main() {
 	}
 
 	stocksClient := stream.NewStocksClient(marketdata.SIP)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	err = stocksClient.Connect(ctx)
+
+	if err != nil {
+		logrus.Fatalf("error connecting to stocks client: %v", err)
+	}
+
 	marketDataClient := marketdata.NewClient(marketdata.ClientOpts{})
 	alpacaClient := alpaca.NewClient(alpaca.ClientOpts{})
 
@@ -69,6 +79,9 @@ func main() {
 				server.Publish(events.RealtimeSymbols, realtimeSymbols)
 			case calendarDayUpdate := <-calendarDayUpdateChan:
 				server.Publish(events.CalendarDayUpdate, calendarDayUpdate)
+			case <-stocksClient.Terminated():
+				logrus.Info("stocks client terminated")
+				cancel()
 			}
 		}
 	}()

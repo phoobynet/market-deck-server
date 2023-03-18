@@ -33,7 +33,7 @@
           @focusout="hasFocus = false"
         />
         <div
-          class="absolute flex flex-col space-y-1 text-xs overflow-auto bg-slate-800 border border-orange-400"
+          class="absolute flex flex-col space-y-1 text-xs overflow-auto bg-slate-800 border border-accent rounded"
           :style="{ left: optionsPosition }"
           v-if="tagInputValue.trim().length > 0"
         >
@@ -41,7 +41,7 @@
             v-for="(option, i) in optionsMatchingFilter"
             class="px-2"
             :class="{
-              'bg-orange-400 text-black': i === selectedPosition,
+              'bg-accent text-black font-bold': i === selectedPosition,
             }"
           >
             {{ option.label }}
@@ -264,19 +264,19 @@ onMounted(() => {
 
 <style lang="scss" scoped>
   .tags {
-    @apply flex flex-row flex-wrap space-x-2 w-full items-center h-8 bg-slate-800 pl-1 border border-slate-900;
+    @apply flex flex-row flex-wrap space-x-2 w-full items-center h-10 bg-slate-800 pl-2 border border-slate-900 rounded;
 
     &.hover {
-      @apply border-orange-400;
+      @apply border-accent;
     }
 
     &.has-focus {
-      @apply border border-orange-400 bg-slate-700;
+      @apply border border-accent bg-slate-700;
     }
   }
 
   .tags-input {
-    @apply outline-none pl-0.5 w-full h-8 bg-slate-800 w-full h-full outline-none placeholder-slate-500;
+    @apply outline-none pl-0.5 w-full h-10 bg-slate-800 w-full h-full outline-none placeholder-slate-500;
 
     &.has-focus {
       @apply bg-slate-700;

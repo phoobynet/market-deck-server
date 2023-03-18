@@ -4,14 +4,20 @@
       {{ tag }}
     </span>
     <template v-if="deletable">
-      <icon class="text-lg cursor-pointer" @click="emit('deleted', tag)">
+      <icon
+        class="text-lg cursor-pointer"
+        @click="emit('deleted', tag)"
+      >
         <CloseCircleOutline />
       </icon>
     </template>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script
+  lang="ts"
+  setup
+>
 import { Icon } from '@vicons/utils'
 import { CloseCircleOutline } from '@vicons/ionicons5'
 import { PropType } from 'vue'
@@ -31,8 +37,11 @@ defineProps({
 const emit = defineEmits(['deleted'])
 </script>
 
-<style lang="scss" scoped>
+<style
+  lang="scss"
+  scoped
+>
   .tag {
-    @apply pl-1 pr-0.5 my-0.5 text-sm font-semibold border border-orange-400 flex flex-row items-center space-x-1;
+    @apply pl-1 pr-0.5 my-0.5 text-base font-semibold border border-accent flex flex-row items-center space-x-1 rounded overflow-hidden;
   }
 </style>

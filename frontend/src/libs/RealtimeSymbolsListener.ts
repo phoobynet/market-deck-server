@@ -1,5 +1,4 @@
 import { baseUrl } from '@/libs/baseUrl'
-import { RealtimeSymbols } from '@/types'
 import { useRealtimeSymbolsStore } from '@/stores'
 
 export class RealtimeSymbolsListener {
@@ -11,9 +10,7 @@ export class RealtimeSymbolsListener {
     const realtimeSymbolsStore = useRealtimeSymbolsStore()
 
     this.realtimeSymbolsSource.onmessage = (event) => {
-      const { data } = JSON.parse(event.data) as { data: RealtimeSymbols }
-
-      realtimeSymbolsStore.$patch({ realtimeSymbols: data })
+      realtimeSymbolsStore.realtimeSymbols = JSON.parse(event.data)
     }
 
     this.realtimeSymbolsSource.onerror = (error) => {
