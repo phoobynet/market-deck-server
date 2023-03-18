@@ -54,6 +54,14 @@ func NewServer(
 	router.GET("/api/stream", getSSEHandler)
 
 	router.GET(
+		"/api/assets", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			all := assetRepository.GetAll()
+
+			_ = writeJSON(w, http.StatusOK, all)
+		},
+	)
+
+	router.GET(
 		"/api/symbols/query", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			query := r.URL.Query().Get("query")
 
