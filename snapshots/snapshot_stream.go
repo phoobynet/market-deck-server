@@ -2,6 +2,7 @@ package snapshots
 
 import (
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
+	"github.com/go-co-op/gocron"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/messages"
@@ -26,6 +27,7 @@ type Stream struct {
 	snapshots           map[string]*Snapshot
 	publishTicker       *time.Ticker
 	publishInterval     time.Duration
+	snapshotScheduler   *gocron.Scheduler
 }
 
 func NewSnapshotStream(
@@ -34,7 +36,6 @@ func NewSnapshotStream(
 	deckRepository *decks.DeckRepository,
 	messageBus chan<- messages.Message,
 ) *Stream {
-
 	l := &Stream{
 		deckRepository:      deckRepository,
 		snapshotsRepository: snapshotsRepository,
@@ -49,6 +50,9 @@ func NewSnapshotStream(
 	l.barStream = bars.NewBarStream(sc, l.barChan)
 	l.tradeStream = trades.NewTradeStream(sc, l.tradeChan)
 	l.quoteStream = quotes.NewQuoteStream(sc, l.quoteChan)
+	l.snapshotScheduler = gocron.NewScheduler(time.UTC)
+
+	l.snapshotScheduler.Every(1).Minute()
 
 	go func(l *Stream) {
 		for {

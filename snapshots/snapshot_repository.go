@@ -28,9 +28,11 @@ func (r *Repository) GetMulti(symbols []string) (map[string]Snapshot, error) {
 
 	for symbol, mdSnapshot := range mdSnapshots {
 		result[symbol] = Snapshot{
-			LatestBar:   bars.FromMarketDataBar(symbol, *mdSnapshot.MinuteBar),
-			LatestQuote: quotes.FromMarketDataQuote(symbol, *mdSnapshot.LatestQuote),
-			LatestTrade: trades.FromMarketDataTrade(symbol, *mdSnapshot.LatestTrade),
+			LatestBar:        bars.FromMarketDataBar(symbol, *mdSnapshot.MinuteBar),
+			LatestQuote:      quotes.FromMarketDataQuote(symbol, *mdSnapshot.LatestQuote),
+			LatestTrade:      trades.FromMarketDataTrade(symbol, *mdSnapshot.LatestTrade),
+			DailyBar:         bars.FromMarketDataBar(symbol, *mdSnapshot.DailyBar),
+			PreviousDailyBar: bars.FromMarketDataBar(symbol, *mdSnapshot.PrevDailyBar),
 		}
 	}
 

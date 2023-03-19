@@ -7,7 +7,9 @@ import (
 )
 
 type Snapshot struct {
-	LatestBar   bars.Bar     `json:"lb"`
-	LatestTrade trades.Trade `json:"lt"`
-	LatestQuote quotes.Quote `json:"lq"`
+	LatestBar        bars.Bar     `json:"lb"`
+	LatestTrade      trades.Trade `json:"lt"`
+	LatestQuote      quotes.Quote `json:"lq"`
+	PreviousDailyBar bars.Bar     `json:"pdb"`
+	DailyBar         bars.Bar     `json:"db"`
 }
