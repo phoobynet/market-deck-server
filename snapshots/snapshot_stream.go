@@ -46,6 +46,10 @@ func NewSnapshotStream(
 		tradeChan:           make(chan map[string]trades.Trade, 1_000),
 	}
 
+	l.barStream = bars.NewBarStream(sc, l.barChan)
+	l.tradeStream = trades.NewTradeStream(sc, l.tradeChan)
+	l.quoteStream = quotes.NewQuoteStream(sc, l.quoteChan)
+
 	go func(l *Stream) {
 		for {
 			select {

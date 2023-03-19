@@ -68,15 +68,14 @@ func main() {
 
 	calendars.NewCalendarDayLive(calendarDayUpdateChan, alpacaClient, calendarDayRepository, messageBus)
 
+	webServer := server.NewServer(config, dist, realTimeSymbols, deckRepository, assetRepository)
+
 	go func() {
 		for message := range messageBus {
 			server.Publish(message)
 		}
 	}()
 
-	webServer := server.NewServer(config, dist, realTimeSymbols, deckRepository, assetRepository)
-
 	logrus.Infof("Listening on %d...", config.ServerPort)
-
 	webServer.Listen()
 }

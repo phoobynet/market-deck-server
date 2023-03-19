@@ -4,23 +4,23 @@
 >
 import { computed } from 'vue'
 import Money from '@/components/formatting/Money.vue'
-import { useRealtimeSymbolsStore } from '@/stores/useRealtimeSymbolsStore'
+import { useSnapshots } from '@/stores/useSnapshots'
 import { storeToRefs } from 'pinia'
 
 const props = defineProps<{
   symbol: string
 }>()
 
-const liveSymbolsStore = useRealtimeSymbolsStore()
+const snapshotsStore = useSnapshots()
 
-const { realtimeSymbols } = storeToRefs(liveSymbolsStore)
+const { snapshots } = storeToRefs(snapshotsStore)
 
 const liveSymbol = computed(() => {
-  if (!realtimeSymbols.value) {
+  if (!snapshots.value) {
     return
   }
 
-  return realtimeSymbols.value[props.symbol]
+  return snapshots.value[props.symbol]
 })
 
 const nameCleaner = (name: string | undefined): string => {

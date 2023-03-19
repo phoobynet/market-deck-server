@@ -5,13 +5,13 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import TopBar from '@/components/TopBar/TopBar.vue'
 import { CalendarDayUpdateListener } from '@/libs/CalendarDayUpdateListener'
-import { RealtimeSymbolsListener } from '@/libs/RealtimeSymbolsListener'
+import { SnapshotsListener } from '@/libs/SnapshotsListener'
 import { useAssetsStore } from '@/stores/useAssetsStore'
 
 const assetsStore = useAssetsStore()
 
 const calendarDayUpdateListener = new CalendarDayUpdateListener()
-const realtimeSymbolsListener = new RealtimeSymbolsListener()
+const realtimeSymbolsListener = new SnapshotsListener()
 
 onMounted(async () => {
   await assetsStore.fetch()

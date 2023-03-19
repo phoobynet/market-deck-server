@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Publish[T any](message Message[T]) {
+func Publish(message Message) {
 	if sseServer == nil {
 		logrus.Panic("SSE server is not ready")
 	}

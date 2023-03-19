@@ -3,7 +3,7 @@
   setup
 >
 import DashboardSymbol from '@/routes/dashboard/DashboardSymbol.vue'
-import { useRealtimeSymbolsStore } from '@/stores'
+import { useSnapshots } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref, watch } from 'vue'
 import { useAssetsStore } from '@/stores/useAssetsStore'
@@ -12,9 +12,9 @@ import { debouncedWatch } from '@vueuse/core'
 import { updateSymbols } from '@/libs/updateSymbols'
 import { getSymbols } from '@/libs/getSymbols'
 
-const realtimeSymbolsStore = useRealtimeSymbolsStore()
+const snapshotsStore = useSnapshots()
 
-const { symbols } = storeToRefs(realtimeSymbolsStore)
+const { symbols } = storeToRefs(snapshotsStore)
 const assetsStore = useAssetsStore()
 
 const {
