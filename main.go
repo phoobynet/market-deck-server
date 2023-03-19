@@ -8,6 +8,7 @@ import (
 	md "github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/phoobynet/market-deck-server/assets"
+	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/calendars"
 	"github.com/phoobynet/market-deck-server/database"
 	"github.com/phoobynet/market-deck-server/decks"
@@ -57,6 +58,7 @@ func main() {
 	calendarDayRepository := calendars.NewCalendarDayRepository(database.GetDB(), alpacaClient)
 	deckRepository := decks.NewDeckRepository(database.GetDB())
 	snapshotRepository := snapshots.NewSnapshotRepository(mdClient)
+	barRepository := bars.NewBarRepository(mdClient)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -65,6 +67,7 @@ func main() {
 		stocksClient,
 		snapshotRepository,
 		deckRepository,
+		barRepository,
 		messageBus,
 	)
 

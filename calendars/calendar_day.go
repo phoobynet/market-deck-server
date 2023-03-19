@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
 	"github.com/golang-module/carbon/v2"
+	"github.com/phoobynet/market-deck-server/helpers/date"
 )
 
 type CalendarDay struct {
@@ -15,11 +16,10 @@ type CalendarDay struct {
 }
 
 func NewMarketCalendarDay(calendarDay alpaca.CalendarDay) CalendarDay {
-	tz := "America/New_York"
-	preMarketOpen := carbon.Parse(fmt.Sprintf("%s %s:00", calendarDay.Date, "04:00"), tz)
-	openingTime := carbon.Parse(fmt.Sprintf("%s %s:00", calendarDay.Date, calendarDay.Open), tz)
-	closingTime := carbon.Parse(fmt.Sprintf("%s %s:00", calendarDay.Date, calendarDay.Close), tz)
-	postMarketClose := carbon.Parse(fmt.Sprintf("%s %s:00", calendarDay.Date, "20:00"), tz)
+	preMarketOpen := carbon.Parse(fmt.Sprintf("%s %s:00", calendarDay.Date, "04:00"), date.MarketTimeZone)
+	openingTime := carbon.Parse(fmt.Sprintf("%s %s:00", calendarDay.Date, calendarDay.Open), date.MarketTimeZone)
+	closingTime := carbon.Parse(fmt.Sprintf("%s %s:00", calendarDay.Date, calendarDay.Close), date.MarketTimeZone)
+	postMarketClose := carbon.Parse(fmt.Sprintf("%s %s:00", calendarDay.Date, "20:00"), date.MarketTimeZone)
 
 	return CalendarDay{
 		Date:            calendarDay.Date,

@@ -55,6 +55,7 @@ const latestTrade = computed<Trade | undefined>(() => {
   >
     <div class="symbol">{{ asset?.S }}</div>
     <div class="name">{{ assetName }}</div>
+    <pre>{{JSON.stringify(snapshot, null, 2)}}</pre>
     <div class="price">
       <Money
         :amount="latestTrade?.p"

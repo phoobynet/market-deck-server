@@ -3,6 +3,7 @@ package bars
 import (
 	md "github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/golang-module/carbon/v2"
+	"github.com/phoobynet/market-deck-server/helpers/date"
 	"time"
 )
 
@@ -77,5 +78,5 @@ func (c *Repository) GetYtdDailyMulti(symbols []string) (map[string][]Bar, error
 }
 
 func now() carbon.Carbon {
-	return carbon.Now("America/New_York")
+	return carbon.Now(date.MarketTimeZone)
 }

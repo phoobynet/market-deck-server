@@ -12,4 +12,7 @@ type Snapshot struct {
 	LatestQuote      quotes.Quote `json:"lq"`
 	PreviousDailyBar bars.Bar     `json:"pdb"`
 	DailyBar         bars.Bar     `json:"db"`
+	PreviousClose    float64      `json:"pc"`
+	Change           float64      `json:"c"`
+	ChangePercent    float64      `json:"cp"`
 }
