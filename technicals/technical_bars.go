@@ -1,44 +1,55 @@
 package technicals
 
 import (
-	"fmt"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/sdcoffey/big"
 	"github.com/sdcoffey/techan"
 	"time"
 )
 
-type TechnicalBars struct {
+type TechnicalBar struct {
+	bars.Bar
+	Technicals map[string]big.Decimal `json:"technicals"`
 }
 
-func NewTechnicalBars(bars []bars.Bar) *TechnicalBars {
-	series := techan.NewTimeSeries()
+func NewTechnicalBar(bar bars.Bar, technicals map[string]big.Decimal) *TechnicalBar {
+	return &TechnicalBar{bar, technicals}
+}
 
-	for _, bar := range bars {
-		period := techan.NewTimePeriod(time.UnixMicro(bar.Timestamp), time.Minute)
-		candle := techan.NewCandle(period)
-		candle.OpenPrice = big.NewDecimal(bar.Open)
-		candle.ClosePrice = big.NewDecimal(bar.Close)
-		candle.MaxPrice = big.NewDecimal(bar.High)
-		candle.MinPrice = big.NewDecimal(bar.Low)
-		candle.Volume = big.NewDecimal(bar.Volume)
+type TechnicalBars struct {
+	bars       []*TechnicalBar
+	timeSeries *techan.TimeSeries
+	indicators []TechnicalIndicator
+}
 
-		series.AddCandle(candle)
+func (t *TechnicalBars) Push(bar bars.Bar) []*TechnicalBar {
+	period := techan.NewTimePeriod(time.UnixMicro(bar.Timestamp), time.Minute)
+	candle := techan.NewCandle(period)
+	candle.OpenPrice = big.NewDecimal(bar.Open)
+	candle.ClosePrice = big.NewDecimal(bar.Close)
+	candle.MaxPrice = big.NewDecimal(bar.High)
+	candle.MinPrice = big.NewDecimal(bar.Low)
+	candle.Volume = big.NewDecimal(bar.Volume)
+
+	t.timeSeries.AddCandle(candle)
+
+	technicals := make(map[string]big.Decimal)
+
+	for _, indicator := range t.indicators {
+		technicals[indicator.String()] = indicator.Calculate(t.timeSeries)
 	}
 
-	// https://www.investopedia.com/top-7-technical-analysis-tools-4773275
-	closePrices := techan.NewClosePriceIndicator(series)
-	ema := techan.NewEMAIndicator(closePrices, 10)
-	rsi := techan.NewRelativeStrengthIndicator(closePrices, 10)
-	macd := techan.NewMACDIndicator(closePrices, 9, 26)
-	slowStoch := techan.NewSlowStochasticIndicator(closePrices, 14)
-	fastStoch := techan.NewFastStochasticIndicator(series, 14)
+	t.bars = append(t.bars, NewTechnicalBar(bar, technicals))
 
-	fmt.Println(ema.Calculate(0))
-	fmt.Println(macd.Calculate(0))
-	fmt.Println(rsi.Calculate(0))
-	fmt.Println(slowStoch.Calculate(0))
-	fmt.Println(fastStoch.Calculate(0))
+	return t.bars
+}
 
-	return &TechnicalBars{}
+// https://www.investopedia.com/top-7-technical-analysis-tools-4773275
+
+func NewTechnicalBars(indicators ...TechnicalIndicator) *TechnicalBars {
+	return &TechnicalBars{
+		bars:       make([]*TechnicalBar, 0),
+		timeSeries: techan.NewTimeSeries(),
+		indicators: indicators,
+	}
 }
