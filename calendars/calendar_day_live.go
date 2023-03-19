@@ -23,6 +23,7 @@ type CalendarDayLive struct {
 }
 
 func NewCalendarDayLive(
+	ctx context.Context,
 	alpacaClient *alpaca.Client,
 	calendarDayRepository *CalendarDayRepository,
 	messageBus chan<- messages.Message,
@@ -39,11 +40,16 @@ func NewCalendarDayLive(
 	l.populateMarketDates()
 
 	go func() {
-		for range l.publishTicker.C {
-			l.update()
-			messageBus <- messages.Message{
-				Event: messages.CalendarDayUpdate,
-				Data:  l.calendarDayUpdate,
+		for {
+			select {
+			case <-l.publishTicker.C:
+				l.update()
+				messageBus <- messages.Message{
+					Event: messages.CalendarDayUpdate,
+					Data:  l.calendarDayUpdate,
+				}
+			case <-ctx.Done():
+				l.publishTicker.Stop()
 			}
 		}
 	}()

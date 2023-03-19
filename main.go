@@ -58,14 +58,17 @@ func main() {
 	deckRepository := decks.NewDeckRepository(database.GetDB())
 	snapshotRepository := snapshots.NewSnapshotRepository(mdClient)
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	realTimeSymbols := snapshots.NewSnapshotStream(
+		ctx,
 		stocksClient,
 		snapshotRepository,
 		deckRepository,
 		messageBus,
 	)
 
-	calendars.NewCalendarDayLive(alpacaClient, calendarDayRepository, messageBus)
+	calendars.NewCalendarDayLive(ctx, alpacaClient, calendarDayRepository, messageBus)
 
 	webServer := server.NewServer(config, dist, realTimeSymbols, deckRepository, assetRepository)
 
@@ -76,6 +79,7 @@ func main() {
 				server.Publish(message)
 			case <-quitChan:
 				logrus.Info("Shutting down...")
+				cancel()
 				os.Exit(0)
 			}
 		}

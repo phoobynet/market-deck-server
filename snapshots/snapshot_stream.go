@@ -1,8 +1,10 @@
 package snapshots
 
 import (
+	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/go-co-op/gocron"
+	"github.com/golang-module/carbon/v2"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/messages"
@@ -31,12 +33,13 @@ type Stream struct {
 }
 
 func NewSnapshotStream(
+	ctx context.Context,
 	sc *stream.StocksClient,
 	snapshotsRepository *Repository,
 	deckRepository *decks.DeckRepository,
 	messageBus chan<- messages.Message,
 ) *Stream {
-	l := &Stream{
+	s := &Stream{
 		deckRepository:      deckRepository,
 		snapshotsRepository: snapshotsRepository,
 		snapshots:           make(map[string]*Snapshot),
@@ -47,12 +50,26 @@ func NewSnapshotStream(
 		tradeChan:           make(chan map[string]trades.Trade, 1_000),
 	}
 
-	l.barStream = bars.NewBarStream(sc, l.barChan)
-	l.tradeStream = trades.NewTradeStream(sc, l.tradeChan)
-	l.quoteStream = quotes.NewQuoteStream(sc, l.quoteChan)
-	l.snapshotScheduler = gocron.NewScheduler(time.UTC)
+	s.barStream = bars.NewBarStream(ctx, sc, s.barChan)
+	s.tradeStream = trades.NewTradeStream(ctx, sc, s.tradeChan)
+	s.quoteStream = quotes.NewQuoteStream(ctx, sc, s.quoteChan)
+	s.snapshotScheduler = gocron.NewScheduler(time.UTC)
 
-	l.snapshotScheduler.Every(1).Minute()
+	snapshotRefreshStartAt := carbon.
+		Now().
+		StartOfMinute().
+		AddMinutes(1).
+		ToStdTime()
+
+	_, err := s.snapshotScheduler.
+		Every(1).
+		Minute().
+		StartAt(snapshotRefreshStartAt).
+		Do(s.refreshSnapshot)
+
+	if err != nil {
+		logrus.Errorf("failed to create snapshot job: %v", err)
+	}
 
 	go func(l *Stream) {
 		for {
@@ -78,49 +95,68 @@ func NewSnapshotStream(
 					Data:  l.snapshots,
 				}
 				l.mu.RUnlock()
+			case <-ctx.Done():
+				l.snapshotScheduler.Stop()
+				l.publishTicker.Stop()
 			}
 		}
-	}(l)
+	}(s)
 
-	return l
+	return s
 }
 
-func (l *Stream) UpdateSymbols(symbols []string) {
-	l.publishTicker.Stop()
-	defer l.publishTicker.Reset(l.publishInterval)
+func (s *Stream) UpdateSymbols(symbols []string) {
+	s.publishTicker.Stop()
+	defer s.publishTicker.Reset(s.publishInterval)
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	_, err := l.deckRepository.UpdateByName("default", symbols)
+	_, err := s.deckRepository.UpdateByName("default", symbols)
 
 	if err != nil {
 		logrus.Fatalf("failed to update symbols: %v", err)
 	}
 
-	oldSymbols := lo.Keys(l.snapshots)
+	oldSymbols := lo.Keys(s.snapshots)
 
 	removedSymbols, addedSymbols := lo.Difference(oldSymbols, symbols)
 
 	if len(removedSymbols) > 0 {
 		for _, symbol := range removedSymbols {
-			delete(l.snapshots, symbol)
+			delete(s.snapshots, symbol)
 		}
 	}
 
 	if len(addedSymbols) > 0 {
-		snapshots, err := l.snapshotsRepository.GetMulti(symbols)
+		snapshots, err := s.snapshotsRepository.GetMulti(symbols)
 
 		if err != nil {
 			logrus.Errorf("failed to get snapshots: %v\n", err)
 		}
 
 		for symbol, snapshot := range snapshots {
-			l.snapshots[symbol] = &snapshot
+			s.snapshots[symbol] = &snapshot
 		}
 	}
 
-	l.barStream.Update(symbols)
-	l.quoteStream.Update(symbols)
-	l.tradeStream.Update(symbols)
+	s.barStream.Update(symbols)
+	s.quoteStream.Update(symbols)
+	s.tradeStream.Update(symbols)
+}
+
+func (s *Stream) refreshSnapshot() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	snapshots, err := s.snapshotsRepository.GetMulti(lo.Keys(s.snapshots))
+
+	if err != nil {
+		logrus.Errorf("failed to get snapshots: %v", err)
+	}
+
+	for symbol, snapshot := range snapshots {
+		s.snapshots[symbol].DailyBar = snapshot.DailyBar
+		s.snapshots[symbol].PreviousDailyBar = snapshot.PreviousDailyBar
+	}
 }

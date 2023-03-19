@@ -1,6 +1,7 @@
 package quotes
 
 import (
+	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,7 @@ type Stream struct {
 	publishTicker *time.Ticker
 }
 
-func NewQuoteStream(sc *stream.StocksClient, publishChan chan<- map[string]Quote) *Stream {
+func NewQuoteStream(ctx context.Context, sc *stream.StocksClient, publishChan chan<- map[string]Quote) *Stream {
 	s := &Stream{
 		sc:            sc,
 		symbols:       make([]string, 0),
@@ -29,7 +30,7 @@ func NewQuoteStream(sc *stream.StocksClient, publishChan chan<- map[string]Quote
 		publishTicker: time.NewTicker(1 * time.Second),
 	}
 
-	go func(s *Stream, publishChan chan<- map[string]Quote) {
+	go func(ctx context.Context, s *Stream, publishChan chan<- map[string]Quote) {
 		for {
 			select {
 			case b := <-s.streamChan:
@@ -47,9 +48,16 @@ func NewQuoteStream(sc *stream.StocksClient, publishChan chan<- map[string]Quote
 
 				s.unpublished = false
 				s.mu.Unlock()
+			case <-ctx.Done():
+				s.publishTicker.Stop()
+				err := s.sc.UnsubscribeFromQuotes(lo.Keys(s.quotes)...)
+
+				if err != nil {
+					logrus.Errorf("failed to unsubscribe from quotes: %s", err)
+				}
 			}
 		}
-	}(s, publishChan)
+	}(ctx, s, publishChan)
 
 	return s
 }

@@ -1,6 +1,7 @@
 package trades
 
 import (
+	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ type Stream struct {
 	publishChan   chan<- map[string]Trade
 }
 
-func NewTradeStream(sc *stream.StocksClient, publishChan chan<- map[string]Trade) *Stream {
+func NewTradeStream(ctx context.Context, sc *stream.StocksClient, publishChan chan<- map[string]Trade) *Stream {
 	s := &Stream{
 		sc:            sc,
 		symbols:       make([]string, 0),
@@ -31,7 +32,7 @@ func NewTradeStream(sc *stream.StocksClient, publishChan chan<- map[string]Trade
 		publishChan:   publishChan,
 	}
 
-	go func(s *Stream) {
+	go func(ctx context.Context, s *Stream) {
 		for {
 			select {
 			case b := <-s.streamChan:
@@ -49,9 +50,16 @@ func NewTradeStream(sc *stream.StocksClient, publishChan chan<- map[string]Trade
 
 				s.unpublished = false
 				s.mu.Unlock()
+			case <-ctx.Done():
+				s.publishTicker.Stop()
+				err := s.sc.UnsubscribeFromTrades(lo.Keys(s.trades)...)
+
+				if err != nil {
+					logrus.Errorf("failed to unsubscribe from trades: %s", err)
+				}
 			}
 		}
-	}(s)
+	}(ctx, s)
 
 	return s
 }

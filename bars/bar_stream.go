@@ -1,6 +1,7 @@
 package bars
 
 import (
+	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,7 @@ type Stream struct {
 	publishTicker *time.Ticker
 }
 
-func NewBarStream(sc *stream.StocksClient, publishChan chan<- map[string]Bar) *Stream {
+func NewBarStream(ctx context.Context, sc *stream.StocksClient, publishChan chan<- map[string]Bar) *Stream {
 	s := &Stream{
 		sc:            sc,
 		symbols:       make([]string, 0),
@@ -29,7 +30,7 @@ func NewBarStream(sc *stream.StocksClient, publishChan chan<- map[string]Bar) *S
 		publishTicker: time.NewTicker(5 * time.Second),
 	}
 
-	go func(s *Stream, publishChan chan<- map[string]Bar) {
+	go func(ctx context.Context, s *Stream, publishChan chan<- map[string]Bar) {
 		for {
 			select {
 			case b := <-s.streamChan:
@@ -47,9 +48,15 @@ func NewBarStream(sc *stream.StocksClient, publishChan chan<- map[string]Bar) *S
 
 				s.unpublished = false
 				s.mu.Unlock()
+			case <-ctx.Done():
+				s.publishTicker.Stop()
+				err := s.sc.UnsubscribeFromBars(lo.Keys(s.bars)...)
+				if err != nil {
+					logrus.Errorf("failed to unsubscribe from bars: %s", err)
+				}
 			}
 		}
-	}(s, publishChan)
+	}(ctx, s, publishChan)
 
 	return s
 }
