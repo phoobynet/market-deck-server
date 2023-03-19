@@ -4,22 +4,37 @@ import { http } from '@/libs/http'
 
 export interface AssetsState {
   assets: Asset[]
+  assetsMap: Record<string, Asset>
   fetching: boolean
 }
 
 export const useAssetsStore = defineStore('assets', {
   state: (): AssetsState => ({
     assets: [],
+    assetsMap: {},
     fetching: true,
   }),
   actions: {
     async fetch (): Promise<void> {
       this.fetching = true
       try {
-        this.assets = await http.get<Asset[]>('/assets').then(r => r.data)
+        const assets = await http.get<Asset[]>('/assets').then(r => r.data)
+
+        this.assetsMap = assets.reduce((acc, asset) => {
+          return {
+            ...acc,
+            [asset.S]: asset,
+          }
+        }, {})
+
+        this.assets = assets
       } finally {
         this.fetching = false
       }
+    },
+
+    getBySymbol (symbol: string): Asset | undefined {
+      return this.assetsMap[symbol]
     },
   },
   getters: {

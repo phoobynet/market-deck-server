@@ -19,8 +19,6 @@ const assetsStore = useAssetsStore()
 const { snapshots } = storeToRefs(snapshotsStore)
 
 const snapshot = computed(() => {
-  return undefined
-
   if (!snapshots.value) {
     return
   }
@@ -38,50 +36,47 @@ const nameCleaner = (name: string | undefined): string => {
 }
 
 const asset = computed<Asset | undefined>(() => {
-  return undefined
-  // return assetsStore.getBySymbol(props.symbol)
+  return assetsStore.getBySymbol(props.symbol)
 })
 
 const assetName = computed<string>(() => {
-  return 'foo'
-  // return nameCleaner(asset.value?.name)
+  return nameCleaner(asset.value?.n)
 })
 
 const latestTrade = computed<Trade | undefined>(() => {
-  return undefined
-  // return snapshot.value?.lt
+  return snapshot.value?.lt
 })
 </script>
 
 <template>
   <div
     v-if="symbol && snapshot && asset"
-    class="dashboard-symbol"
+    class="dashboard-report-card"
   >
-<!--    <div class="symbol">{{ asset?.symbol }}</div>-->
-<!--    <div class="name">{{ assetName }}</div>-->
-<!--    <div class="price">-->
-<!--      <Money-->
-<!--        :amount="0"-->
-<!--        :show-sign="false"-->
-<!--        currency="$"-->
-<!--        :sexy="true"-->
-<!--      ></Money>-->
-<!--    </div>-->
-<!--    <div class="previous-close-change">-->
-<!--      <Money-->
-<!--        :amount="0"-->
-<!--        :show-sign="true"-->
-<!--        :sexy="true"-->
-<!--      />-->
-<!--    </div>-->
-<!--    <div class="previous-close">-->
-<!--      <Money-->
-<!--        :amount="0"-->
-<!--        :show-sign="false"-->
-<!--        currency="$"-->
-<!--      ></Money>-->
-<!--    </div>-->
+    <div class="symbol">{{ asset?.S }}</div>
+    <div class="name">{{ assetName }}</div>
+    <div class="price">
+      <Money
+        :amount="latestTrade?.p"
+        :show-sign="false"
+        currency="$"
+        :sexy="true"
+      ></Money>
+    </div>
+    <div class="previous-close-change">
+      <Money
+        :amount="0"
+        :show-sign="true"
+        :sexy="true"
+      />
+    </div>
+    <div class="previous-close">
+      <Money
+        :amount="0"
+        :show-sign="false"
+        currency="$"
+      ></Money>
+    </div>
   </div>
 </template>
 
@@ -89,7 +84,7 @@ const latestTrade = computed<Trade | undefined>(() => {
   lang="scss"
   scoped
 >
-  .dashboard-symbol {
+  .dashboard-report-card {
     @apply border px-2 py-1 rounded-md border-slate-600;
 
     .symbol {

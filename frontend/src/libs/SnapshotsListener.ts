@@ -1,16 +1,19 @@
 import { baseUrl } from '@/libs/baseUrl'
-import { useSnapshots } from '@/stores'
+import { useSnapshotsStore } from '@/stores'
+import { Snapshots } from '@/types'
 
 export class SnapshotsListener {
   private source?: EventSource
 
   start () {
-    this.source = new EventSource(`${baseUrl}/api/stream?stream=realtime_symbols`)
+    this.source = new EventSource(`${baseUrl}/api/stream?stream=snapshots`)
 
-    const snapshotsStore = useSnapshots()
+    const snapshotsStore = useSnapshotsStore()
 
     this.source.onmessage = (event) => {
-      snapshotsStore.snapshots = JSON.parse(event.data)
+      const { data } = JSON.parse(event.data) as { event: string, data: Snapshots }
+
+      snapshotsStore.snapshots = data
     }
 
     this.source.onerror = (error) => {

@@ -2,11 +2,12 @@ package server
 
 import (
 	"encoding/json"
+	"github.com/phoobynet/market-deck-server/messages"
 	"github.com/r3labs/sse/v2"
 	"github.com/sirupsen/logrus"
 )
 
-func Publish(message Message) {
+func Publish(message messages.Message) {
 	if sseServer == nil {
 		logrus.Panic("SSE server is not ready")
 	}

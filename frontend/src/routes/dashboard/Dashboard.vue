@@ -2,8 +2,7 @@
   lang="ts"
   setup
 >
-import DashboardSymbol from '@/routes/dashboard/DashboardSymbol.vue'
-import { useSnapshots } from '@/stores'
+import { useSnapshotsStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref, watch } from 'vue'
 import { useAssetsStore } from '@/stores/useAssetsStore'
@@ -11,8 +10,9 @@ import Tags from '@/components/Tags.vue'
 import { debouncedWatch } from '@vueuse/core'
 import { updateSymbols } from '@/libs/updateSymbols'
 import { getSymbols } from '@/libs/getSymbols'
+import DashboardReportCard from '@/routes/dashboard/DashboardReportCard.vue'
 
-const snapshotsStore = useSnapshots()
+const snapshotsStore = useSnapshotsStore()
 
 const { symbols } = storeToRefs(snapshotsStore)
 const assetsStore = useAssetsStore()
@@ -30,7 +30,7 @@ const loading = ref<boolean>(true)
 watch(hasAssets, (newValue) => {
   if (newValue && options.size === 0) {
     for (const asset of assets.value) {
-      options.set(asset.symbol, asset.name)
+      options.set(asset.S, asset.n)
     }
     loading.value = false
   }
@@ -66,10 +66,10 @@ onMounted(async () => {
         enter-active-class="animate__animated animate__fadeIn animate__faster"
         leave-active-class="animate__animated animate__fadeOut animate__faster"
       >
-        <DashboardSymbol
-          :symbol="symbol"
-          v-for="symbol in symbols"
+        <DashboardReportCard
+          v-for="symbol of symbols"
           :key="symbol"
+          :symbol="symbol"
         />
       </transition-group>
     </main>

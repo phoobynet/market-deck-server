@@ -1,6 +1,6 @@
 export interface Asset {
-  symbol: string
-  name: string
-  exchange: string
-  class: string
+  S: string
+  n: string
+  x: string
+  c: string
 }

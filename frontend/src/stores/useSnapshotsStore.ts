@@ -5,7 +5,7 @@ export interface SnapshotsState {
   snapshots: Snapshots
 }
 
-export const useSnapshots = defineStore('snapshots', {
+export const useSnapshotsStore = defineStore('snapshots', {
   state: (): SnapshotsState => ({
     snapshots: {},
   }),

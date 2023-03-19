@@ -11,6 +11,7 @@ import (
 	"github.com/phoobynet/market-deck-server/calendars"
 	"github.com/phoobynet/market-deck-server/database"
 	"github.com/phoobynet/market-deck-server/decks"
+	"github.com/phoobynet/market-deck-server/messages"
 	"github.com/phoobynet/market-deck-server/server"
 	"github.com/phoobynet/market-deck-server/snapshots"
 	"github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ var (
 	//go:embed dist
 	dist       embed.FS
 	quitChan   = make(chan os.Signal, 1)
-	messageBus = make(chan server.Message, 100_00)
+	messageBus = make(chan messages.Message, 100_00)
 )
 
 func main() {
@@ -55,9 +56,7 @@ func main() {
 	assetRepository := assets.NewAssetRepository(database.GetDB(), alpacaClient)
 	calendarDayRepository := calendars.NewCalendarDayRepository(database.GetDB(), alpacaClient)
 	deckRepository := decks.NewDeckRepository(database.GetDB())
-	snapshotRepository := snapshots.NewSnapshotRepository(mdClient, assetRepository)
-
-	calendarDayUpdateChan := make(chan calendars.CalendarDayUpdate, 100)
+	snapshotRepository := snapshots.NewSnapshotRepository(mdClient)
 
 	realTimeSymbols := snapshots.NewSnapshotStream(
 		stocksClient,
@@ -66,13 +65,19 @@ func main() {
 		messageBus,
 	)
 
-	calendars.NewCalendarDayLive(calendarDayUpdateChan, alpacaClient, calendarDayRepository, messageBus)
+	calendars.NewCalendarDayLive(alpacaClient, calendarDayRepository, messageBus)
 
 	webServer := server.NewServer(config, dist, realTimeSymbols, deckRepository, assetRepository)
 
 	go func() {
-		for message := range messageBus {
-			server.Publish(message)
+		for {
+			select {
+			case message := <-messageBus:
+				server.Publish(message)
+			case <-quitChan:
+				logrus.Info("Shutting down...")
+				os.Exit(0)
+			}
 		}
 	}()
 

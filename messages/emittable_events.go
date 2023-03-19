@@ -1,4 +1,4 @@
-package server
+package messages
 
 type EmittableEvents string
 

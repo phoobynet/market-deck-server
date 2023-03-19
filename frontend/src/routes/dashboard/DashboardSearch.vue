@@ -42,9 +42,9 @@ debouncedWatch(query, async (newValue) => {
       <ul>
         <li
           v-for="asset in assets"
-          :key="asset.symbol"
+          :key="asset.S"
         >
-          {{ asset.symbol }} - {{ asset.name }}
+          {{ asset.S }} - {{ asset.n }}
         </li>
       </ul>
     </div>

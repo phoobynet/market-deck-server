@@ -1,5 +1,6 @@
 import { baseUrl } from '@/libs/baseUrl'
 import { useCalendarDayUpdate } from '@/stores'
+import { CalendarDayUpdate } from '@/types'
 
 export class CalendarDayUpdateListener {
   private calendarDayUpdateSource?: EventSource
@@ -10,7 +11,9 @@ export class CalendarDayUpdateListener {
     const calendarDayUpdateStore = useCalendarDayUpdate()
 
     this.calendarDayUpdateSource.onmessage = (event) => {
-      calendarDayUpdateStore.calendarDayUpdate = JSON.parse(event.data)
+      const { data } = JSON.parse(event.data) as { event: string, data: CalendarDayUpdate }
+
+      calendarDayUpdateStore.calendarDayUpdate = data
     }
 
     this.calendarDayUpdateSource.onerror = (error) => {

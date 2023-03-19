@@ -4,8 +4,8 @@ import (
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/decks"
+	"github.com/phoobynet/market-deck-server/messages"
 	"github.com/phoobynet/market-deck-server/quotes"
-	"github.com/phoobynet/market-deck-server/server"
 	"github.com/phoobynet/market-deck-server/trades"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
@@ -32,7 +32,7 @@ func NewSnapshotStream(
 	sc *stream.StocksClient,
 	snapshotsRepository *Repository,
 	deckRepository *decks.DeckRepository,
-	messageBus chan<- server.Message,
+	messageBus chan<- messages.Message,
 ) *Stream {
 
 	l := &Stream{
@@ -69,8 +69,8 @@ func NewSnapshotStream(
 				}
 			case <-l.publishTicker.C:
 				l.mu.RLock()
-				messageBus <- server.Message{
-					Event: server.Snapshots,
+				messageBus <- messages.Message{
+					Event: messages.Snapshots,
 					Data:  l.snapshots,
 				}
 				l.mu.RUnlock()
