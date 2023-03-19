@@ -1,10 +1,10 @@
 package assets
 
 type Asset struct {
-	Symbol   string `gorm:"primaryKey" json:"symbol"`
-	Name     string `json:"name"`
-	Exchange string `json:"exchange"`
-	Status   string `json:"status"`
-	Class    string `json:"class"`
+	Symbol   string `gorm:"primaryKey" json:"S"`
+	Name     string `json:"n"`
+	Exchange string `json:"x"`
+	Status   string `json:"-"`
+	Class    string `json:"-"`
 	Query    string `json:"-"`
 }

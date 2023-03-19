@@ -5,25 +5,24 @@ import (
 	"embed"
 	"flag"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
-	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
+	md "github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/phoobynet/market-deck-server/assets"
 	"github.com/phoobynet/market-deck-server/calendars"
 	"github.com/phoobynet/market-deck-server/database"
 	"github.com/phoobynet/market-deck-server/decks"
-	"github.com/phoobynet/market-deck-server/events"
-	"github.com/phoobynet/market-deck-server/realtime"
 	"github.com/phoobynet/market-deck-server/server"
+	"github.com/phoobynet/market-deck-server/snapshots"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
-	"time"
 )
 
 var (
 	//go:embed dist
-	dist     embed.FS
-	quitChan = make(chan os.Signal, 1)
+	dist       embed.FS
+	quitChan   = make(chan os.Signal, 1)
+	messageBus = make(chan server.Message, 100_00)
 )
 
 func main() {
@@ -40,62 +39,40 @@ func main() {
 		logrus.Fatalf("Error loading config: %s", err)
 	}
 
-	stocksClient := stream.NewStocksClient(marketdata.SIP)
+	stocksClient := stream.NewStocksClient(md.SIP)
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	err = stocksClient.Connect(ctx)
+	err = stocksClient.Connect(context.TODO())
 
 	if err != nil {
 		logrus.Fatalf("error connecting to stocks client: %v", err)
 	}
 
-	marketDataClient := marketdata.NewClient(marketdata.ClientOpts{})
+	server.InitSSE()
+
+	mdClient := md.NewClient(md.ClientOpts{})
 	alpacaClient := alpaca.NewClient(alpaca.ClientOpts{})
 
 	assetRepository := assets.NewAssetRepository(database.GetDB(), alpacaClient)
 	calendarDayRepository := calendars.NewCalendarDayRepository(database.GetDB(), alpacaClient)
 	deckRepository := decks.NewDeckRepository(database.GetDB())
+	snapshotRepository := snapshots.NewSnapshotRepository(mdClient, assetRepository)
 
-	if deckRepository.Count() == 0 {
-		_, err := deckRepository.Create("default", []string{})
-
-		if err != nil {
-			logrus.Fatalf("error creating default deck: %v", err)
-		}
-	}
-
-	realtimeSymbolsChan := make(chan map[string]*realtime.Symbol, 100)
 	calendarDayUpdateChan := make(chan calendars.CalendarDayUpdate, 100)
 
-	realTimeSymbols := realtime.NewLiveSymbols(
-		realtimeSymbolsChan,
-		alpacaClient,
-		marketDataClient,
+	realTimeSymbols := snapshots.NewSnapshotStream(
 		stocksClient,
-		1*time.Second,
-		calendarDayRepository,
-		assetRepository,
+		snapshotRepository,
 		deckRepository,
+		messageBus,
 	)
 
-	calendars.NewCalendarDayLive(calendarDayUpdateChan, alpacaClient, calendarDayRepository)
+	calendars.NewCalendarDayLive(calendarDayUpdateChan, alpacaClient, calendarDayRepository, messageBus)
 
 	go func() {
-		for {
-			select {
-			case realtimeSymbols := <-realtimeSymbolsChan:
-				server.Publish(events.RealtimeSymbols, realtimeSymbols)
-			case calendarDayUpdate := <-calendarDayUpdateChan:
-				server.Publish(events.CalendarDayUpdate, calendarDayUpdate)
-			case <-stocksClient.Terminated():
-				logrus.Info("stocks client terminated")
-				cancel()
-			}
+		for message := range messageBus {
+			server.Publish(message)
 		}
 	}()
-
-	server.InitSSE()
 
 	webServer := server.NewServer(config, dist, realTimeSymbols, deckRepository, assetRepository)
 

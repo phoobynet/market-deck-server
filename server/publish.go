@@ -2,12 +2,11 @@ package server
 
 import (
 	"encoding/json"
-	"github.com/phoobynet/market-deck-server/events"
 	"github.com/r3labs/sse/v2"
 	"github.com/sirupsen/logrus"
 )
 
-func Publish[T any](messageType events.EmittableEvents, message T) {
+func Publish[T any](message Message[T]) {
 	if sseServer == nil {
 		logrus.Panic("SSE server is not ready")
 	}
@@ -19,7 +18,7 @@ func Publish[T any](messageType events.EmittableEvents, message T) {
 	}
 
 	sseServer.Publish(
-		string(messageType), &sse.Event{
+		string(message.Event), &sse.Event{
 			Data: jsonData,
 		},
 	)

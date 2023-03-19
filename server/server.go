@@ -7,7 +7,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/phoobynet/market-deck-server/assets"
 	"github.com/phoobynet/market-deck-server/decks"
-	"github.com/phoobynet/market-deck-server/realtime"
+	"github.com/phoobynet/market-deck-server/snapshots"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -25,7 +25,7 @@ type Server struct {
 func NewServer(
 	config *Config,
 	dist embed.FS,
-	realtimeSymbols *realtime.Symbols,
+	realtimeSymbols *snapshots.Stream,
 	deckRepository *decks.DeckRepository,
 	assetRepository *assets.AssetRepository,
 ) *Server {

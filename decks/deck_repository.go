@@ -1,6 +1,7 @@
 package decks
 
 import (
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"strings"
 )
@@ -10,9 +11,19 @@ type DeckRepository struct {
 }
 
 func NewDeckRepository(db *gorm.DB) *DeckRepository {
-	return &DeckRepository{
+	d := &DeckRepository{
 		db: db,
 	}
+
+	if d.Count() == 0 {
+		_, err := d.Create("default", []string{})
+
+		if err != nil {
+			logrus.Fatalf("error creating default deck: %v", err)
+		}
+	}
+
+	return d
 }
 
 func (d *DeckRepository) Create(name string, symbols []string) (*Deck, error) {

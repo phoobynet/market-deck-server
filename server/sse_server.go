@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/julienschmidt/httprouter"
-	"github.com/phoobynet/market-deck-server/events"
 	"github.com/r3labs/sse/v2"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -19,10 +18,10 @@ func InitSSE() {
 	if sseServer == nil {
 		sseServer = sse.New()
 		sseServer.AutoReplay = false
-		sseServer.CreateStream(events.CalendarDayUpdate)
-		sseServer.CreateStream(events.RealtimeSymbols)
-		sseServer.CreateStream(events.Messages)
-		sseServer.CreateStream(events.Errors)
+		sseServer.CreateStream(CalendarDayUpdate)
+		sseServer.CreateStream(Snapshots)
+		sseServer.CreateStream(Messages)
+		sseServer.CreateStream(Errors)
 	}
 }
 

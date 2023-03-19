@@ -5,6 +5,7 @@ import (
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
 	"github.com/golang-module/carbon/v2"
 	"github.com/phoobynet/market-deck-server/helpers/date"
+	"github.com/phoobynet/market-deck-server/server"
 	"sync"
 	"time"
 )
@@ -25,6 +26,7 @@ func NewCalendarDayLive(
 	calendarDayChan chan<- CalendarDayUpdate,
 	alpacaClient *alpaca.Client,
 	calendarDayRepository *CalendarDayRepository,
+	messageBus chan<- server.Message,
 ) *CalendarDayLive {
 	l := &CalendarDayLive{
 		alpacaClient:    alpacaClient,
@@ -40,7 +42,10 @@ func NewCalendarDayLive(
 	go func() {
 		for range l.publishTicker.C {
 			l.update()
-			calendarDayChan <- l.calendarDayUpdate
+			messageBus <- server.Message{
+				Event: server.CalendarDayUpdate,
+				Data:  l.calendarDayUpdate,
+			}
 		}
 	}()
 

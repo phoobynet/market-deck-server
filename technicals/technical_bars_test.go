@@ -65,11 +65,10 @@ func TestTechnicalBars_SMA(t *testing.T) {
 }
 
 func BenchmarkNewTechnicalBarsSMA(b *testing.B) {
+	smaIndicator := NewSMAIndicator(5)
+	technicalBars := NewTechnicalBars(smaIndicator)
+
 	for i := 0; i < b.N; i++ {
-		smaIndicator := NewSMAIndicator(5)
-
-		technicalBars := NewTechnicalBars(smaIndicator)
-
 		for _, bar := range getBars() {
 			technicalBars.Push(bar)
 		}

@@ -39,6 +39,16 @@ func (a *AssetRepository) Get(symbol string) Asset {
 	return asset
 }
 
+func (a *AssetRepository) GetMulti(symbols []string) map[string]Asset {
+	a.populate()
+
+	var assets map[string]Asset
+
+	a.db.Where("symbol IN ?", symbols).Find(&assets)
+
+	return assets
+}
+
 func (a *AssetRepository) GetAll() []Asset {
 	a.populate()
 	var assets []Asset

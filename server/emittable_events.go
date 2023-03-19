@@ -1,9 +1,9 @@
-package events
+package server
 
 type EmittableEvents string
 
 const (
-	RealtimeSymbols   = "realtime_symbols"
+	Snapshots         = "snapshots"
 	CalendarDayUpdate = "calendar_day_update"
 	Messages          = "messages"
 	Errors            = "errors"
