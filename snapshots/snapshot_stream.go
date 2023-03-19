@@ -27,7 +27,7 @@ type Stream struct {
 	tradeChan           chan map[string]trades.Trade
 	snapshotsRepository *Repository
 	mu                  sync.RWMutex
-	snapshots           map[string]*Snapshot
+	snapshots           map[string]Snapshot
 	bars                map[string][]bars.Bar
 	publishTicker       *time.Ticker
 	publishInterval     time.Duration
@@ -46,7 +46,7 @@ func NewSnapshotStream(
 	s := &Stream{
 		deckRepository:      deckRepository,
 		snapshotsRepository: snapshotsRepository,
-		snapshots:           make(map[string]*Snapshot),
+		snapshots:           make(map[string]Snapshot),
 		publishInterval:     1 * time.Second,
 		publishTicker:       time.NewTicker(1 * time.Second),
 		barChan:             make(chan map[string]bars.Bar, 1_000),
@@ -83,36 +83,45 @@ func NewSnapshotStream(
 			case barsMap := <-l.barChan:
 				l.mu.Lock()
 				for symbol, bar := range barsMap {
-					l.snapshots[symbol].LatestBar = bar
+					if snapshot, ok := l.snapshots[symbol]; ok {
+						snapshot.LatestBar = bar
+						l.snapshots[symbol] = snapshot
+					}
 					l.bars[symbol] = append(l.bars[symbol], bar)
 				}
 				l.mu.Unlock()
 			case quotesMap := <-l.quoteChan:
 				l.mu.Lock()
 				for symbol, quote := range quotesMap {
-					l.snapshots[symbol].LatestQuote = quote
+					if snapshot, ok := l.snapshots[symbol]; ok {
+						snapshot.LatestQuote = quote
+						l.snapshots[symbol] = snapshot
+					}
 				}
 				l.mu.Unlock()
 			case tradesMap := <-l.tradeChan:
 				l.mu.Lock()
 
 				for symbol, latestTrade := range tradesMap {
-					l.snapshots[symbol].LatestTrade = latestTrade
+					if snapshot, ok := l.snapshots[symbol]; ok {
+						diff := numbers.NumberDiff(l.snapshots[symbol].PreviousClose, latestTrade.Price)
 
-					diff := numbers.NumberDiff(l.snapshots[symbol].PreviousClose, latestTrade.Price)
+						snapshot.Change = diff.Change
+						snapshot.ChangePercent = diff.ChangePercent
+						snapshot.LatestTrade = latestTrade
+						l.snapshots[symbol] = snapshot
+					}
 
-					l.snapshots[symbol].Change = diff.Change
-					l.snapshots[symbol].ChangePercent = diff.ChangePercent
 				}
 
 				l.mu.Unlock()
 			case <-l.publishTicker.C:
-				l.mu.RLock()
+				l.mu.Lock()
 				messageBus <- messages.Message{
 					Event: messages.Snapshots,
 					Data:  l.snapshots,
 				}
-				l.mu.RUnlock()
+				l.mu.Unlock()
 			case <-ctx.Done():
 				l.snapshotScheduler.Stop()
 				l.publishTicker.Stop()
@@ -155,7 +164,8 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 		}
 
 		for symbol, snapshot := range snapshots {
-			s.snapshots[symbol] = &snapshot
+			s.snapshots[symbol] = snapshot
+			logrus.Infof("snapshot: %v", s.snapshots)
 		}
 
 		go s.fillIntradayBars(symbols)
@@ -178,9 +188,12 @@ func (s *Stream) refreshSnapshot() {
 	}
 
 	for symbol, snapshot := range snapshots {
-		s.snapshots[symbol].DailyBar = snapshot.DailyBar
-		s.snapshots[symbol].PreviousDailyBar = snapshot.PreviousDailyBar
-		s.snapshots[symbol].PreviousClose = snapshot.PreviousClose
+		if existingSnapshot, ok := s.snapshots[symbol]; ok {
+			existingSnapshot.DailyBar = snapshot.DailyBar
+			existingSnapshot.PreviousDailyBar = snapshot.PreviousDailyBar
+			existingSnapshot.PreviousClose = snapshot.PreviousClose
+			s.snapshots[symbol] = existingSnapshot
+		}
 	}
 }
 

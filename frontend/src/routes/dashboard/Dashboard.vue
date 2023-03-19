@@ -14,7 +14,7 @@ import DashboardReportCard from '@/routes/dashboard/DashboardReportCard.vue'
 
 const snapshotsStore = useSnapshotsStore()
 
-const { symbols } = storeToRefs(snapshotsStore)
+const { symbols, snapshots } = storeToRefs(snapshotsStore)
 const assetsStore = useAssetsStore()
 
 const {

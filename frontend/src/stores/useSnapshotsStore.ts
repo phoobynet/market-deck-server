@@ -18,3 +18,4 @@ export const useSnapshotsStore = defineStore('snapshots', {
     },
   },
 })
+

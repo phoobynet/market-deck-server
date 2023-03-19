@@ -7,7 +7,7 @@ import Money from '@/components/formatting/Money.vue'
 import { useSnapshotsStore } from '@/stores/useSnapshotsStore'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/useAssetsStore'
-import { Asset, Trade } from '@/types'
+import { Asset, Snapshot, Trade } from '@/types'
 
 const props = defineProps<{
   symbol: string
@@ -18,9 +18,9 @@ const assetsStore = useAssetsStore()
 
 const { snapshots } = storeToRefs(snapshotsStore)
 
-const snapshot = computed(() => {
+const snapshot = computed<Snapshot | undefined>(() => {
   if (!snapshots.value) {
-    return
+    return undefined
   }
 
   return snapshots.value[props.symbol]
@@ -53,9 +53,9 @@ const latestTrade = computed<Trade | undefined>(() => {
     v-if="symbol && snapshot && asset"
     class="dashboard-report-card"
   >
-    <div class="symbol">{{ asset?.S }}</div>
+    <div class="symbol">{{ symbol }}</div>
     <div class="name">{{ assetName }}</div>
-    <pre>{{JSON.stringify(snapshot, null, 2)}}</pre>
+    <pre>{{ JSON.stringify(snapshots, null, 2) }}</pre>
     <div class="price">
       <Money
         :amount="latestTrade?.p"
