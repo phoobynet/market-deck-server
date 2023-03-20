@@ -62,7 +62,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	realTimeSymbols := snapshots.NewSnapshotStream(
+	snapshotStream := snapshots.NewSnapshotStream(
 		ctx,
 		stocksClient,
 		snapshotRepository,
@@ -73,7 +73,7 @@ func main() {
 
 	calendars.NewCalendarDayLive(ctx, alpacaClient, calendarDayRepository, messageBus)
 
-	webServer := server.NewServer(config, dist, realTimeSymbols, deckRepository, assetRepository)
+	webServer := server.NewServer(config, dist, snapshotStream, deckRepository, assetRepository)
 
 	go func() {
 		for {

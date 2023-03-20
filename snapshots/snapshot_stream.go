@@ -196,6 +196,10 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 }
 
 func (s *Stream) refreshSnapshot(symbols []string) {
+	if len(symbols) == 0 {
+		return
+	}
+
 	snapshots, err := s.snapshotsRepository.GetMulti(symbols)
 
 	if err != nil {
@@ -210,6 +214,10 @@ func (s *Stream) refreshSnapshot(symbols []string) {
 }
 
 func (s *Stream) fillIntradayBars(symbols []string) {
+	if len(symbols) == 0 {
+		return
+	}
+
 	intradayMulti, err := s.barRepository.GetIntradayMulti(symbols)
 
 	if err != nil {

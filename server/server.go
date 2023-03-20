@@ -26,7 +26,7 @@ type Server struct {
 func NewServer(
 	config *Config,
 	dist embed.FS,
-	realtimeSymbols *snapshots.Stream,
+	snapshotStream *snapshots.Stream,
 	deckRepository *decks.DeckRepository,
 	assetRepository *assets.AssetRepository,
 ) *Server {
@@ -88,7 +88,7 @@ func NewServer(
 				return
 			}
 
-			realtimeSymbols.UpdateSymbols(strings.Split(symbols, ","))
+			snapshotStream.UpdateSymbols(strings.Split(symbols, ","))
 
 			w.WriteHeader(http.StatusOK)
 		},
@@ -214,6 +214,14 @@ func NewServer(
 			}
 
 			_ = writeJSON(w, http.StatusOK, update)
+		},
+	)
+
+	router.GET(
+		"/api/bars/intraday", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			bars := snapshotStream.GetIntradayBars()
+
+			_ = writeJSON(w, http.StatusOK, bars)
 		},
 	)
 
