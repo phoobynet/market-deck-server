@@ -108,6 +108,8 @@ func NewSnapshotStream(
 
 						snapshot.Change = diff.Change
 						snapshot.ChangePercent = diff.ChangePercent
+						snapshot.ChangeSign = diff.Sign
+						snapshot.ChangeAbs = diff.AbsoluteChange
 						snapshot.LatestTrade = latestTrade
 						l.snapshots[symbol] = snapshot
 					}
@@ -165,7 +167,6 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 
 		for symbol, snapshot := range snapshots {
 			s.snapshots[symbol] = snapshot
-			logrus.Infof("snapshot: %v", s.snapshots)
 		}
 
 		go s.fillIntradayBars(symbols)

@@ -15,4 +15,6 @@ type Snapshot struct {
 	PreviousClose    float64      `json:"pc"`
 	Change           float64      `json:"c"`
 	ChangePercent    float64      `json:"cp"`
+	ChangeSign       int8         `json:"cs"`
+	ChangeAbs        float64      `json:"ca"`
 }

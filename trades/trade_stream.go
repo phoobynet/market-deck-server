@@ -30,6 +30,7 @@ func NewTradeStream(ctx context.Context, sc *stream.StocksClient, publishChan ch
 		unpublished:   true,
 		publishTicker: time.NewTicker(1 * time.Second),
 		publishChan:   publishChan,
+		trades:        make(map[string]Trade),
 	}
 
 	go func(ctx context.Context, s *Stream) {

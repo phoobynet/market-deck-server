@@ -28,6 +28,7 @@ func NewBarStream(ctx context.Context, sc *stream.StocksClient, publishChan chan
 		barChan:       make(chan Bar, 1_000),
 		unpublished:   true,
 		publishTicker: time.NewTicker(5 * time.Second),
+		bars:          make(map[string]Bar),
 	}
 
 	go func(ctx context.Context, s *Stream, publishChan chan<- map[string]Bar) {

@@ -28,6 +28,7 @@ func NewQuoteStream(ctx context.Context, sc *stream.StocksClient, publishChan ch
 		quoteChan:     make(chan Quote, 1_000),
 		unpublished:   true,
 		publishTicker: time.NewTicker(1 * time.Second),
+		quotes:        make(map[string]Quote),
 	}
 
 	go func(ctx context.Context, s *Stream, publishChan chan<- map[string]Quote) {

@@ -13,6 +13,7 @@ type Bar struct {
 	Timestamp  int64   `json:"t"`
 }
 
+// Date taken from the Timestamp field (ms) and formatted as YYYY-MM-DD
 func (b *Bar) Date() string {
-	return time.UnixMicro(b.Timestamp).Format("2006-01-02")
+	return time.UnixMilli(b.Timestamp).Format("2006-01-02")
 }

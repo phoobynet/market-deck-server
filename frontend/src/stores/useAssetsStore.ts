@@ -16,17 +16,17 @@ export const useAssetsStore = defineStore('assets', {
   }),
   actions: {
     async fetch (): Promise<void> {
-      this.fetching = true
       try {
+        this.fetching = true
         const assets = await http.get<Asset[]>('/assets').then(r => r.data)
 
-        this.assetsMap = assets.reduce((acc, asset) => {
-          return {
-            ...acc,
-            [asset.S]: asset,
-          }
-        }, {})
+        const map: Record<string, Asset> = {}
 
+        for (const asset of assets) {
+          map[asset.S] = asset
+        }
+
+        this.assetsMap = map
         this.assets = assets
       } finally {
         this.fetching = false

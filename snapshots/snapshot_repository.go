@@ -5,6 +5,7 @@ import (
 	"github.com/golang-module/carbon/v2"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/helpers/date"
+	"github.com/phoobynet/market-deck-server/helpers/numbers"
 	"github.com/phoobynet/market-deck-server/quotes"
 	"github.com/phoobynet/market-deck-server/trades"
 )
@@ -40,7 +41,7 @@ func (r *Repository) GetMulti(symbols []string) (map[string]Snapshot, error) {
 			previousClose = dailyBar.Close
 		}
 
-		result[symbol] = Snapshot{
+		s := Snapshot{
 			LatestBar:        bars.FromMarketDataBar(symbol, *mdSnapshot.MinuteBar),
 			LatestQuote:      quotes.FromMarketDataQuote(symbol, *mdSnapshot.LatestQuote),
 			LatestTrade:      trades.FromMarketDataTrade(symbol, *mdSnapshot.LatestTrade),
@@ -48,6 +49,15 @@ func (r *Repository) GetMulti(symbols []string) (map[string]Snapshot, error) {
 			PreviousDailyBar: previousDailyBar,
 			PreviousClose:    previousClose,
 		}
+
+		diff := numbers.NumberDiff(s.PreviousClose, s.LatestTrade.Price)
+
+		s.Change = diff.Change
+		s.ChangePercent = diff.ChangePercent
+		s.ChangeSign = diff.Sign
+		s.ChangeAbs = diff.AbsoluteChange
+
+		result[symbol] = s
 	}
 
 	return result, nil

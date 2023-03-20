@@ -46,6 +46,18 @@ const assetName = computed<string>(() => {
 const latestTrade = computed<Trade | undefined>(() => {
   return snapshot.value?.lt
 })
+
+const previousClose = computed<number>(() => {
+  return snapshot.value?.pc ?? 0
+})
+
+const previousClosePercentChange = computed<number>(() => {
+  return snapshot.value?.cp ?? 0
+})
+
+const change = computed<number>(() => {
+  return snapshot.value?.c ?? 0
+})
 </script>
 
 <template>
@@ -55,7 +67,6 @@ const latestTrade = computed<Trade | undefined>(() => {
   >
     <div class="symbol">{{ symbol }}</div>
     <div class="name">{{ assetName }}</div>
-    <pre>{{ JSON.stringify(snapshots, null, 2) }}</pre>
     <div class="price">
       <Money
         :amount="latestTrade?.p"
@@ -66,14 +77,17 @@ const latestTrade = computed<Trade | undefined>(() => {
     </div>
     <div class="previous-close-change">
       <Money
-        :amount="0"
+        :amount="change"
         :show-sign="true"
         :sexy="true"
       />
     </div>
+    <div class="previous-close-change-percentage">
+      %{{ previousClosePercentChange }}
+    </div>
     <div class="previous-close">
       <Money
-        :amount="0"
+        :amount="previousClose"
         :show-sign="false"
         currency="$"
       ></Money>
@@ -86,14 +100,40 @@ const latestTrade = computed<Trade | undefined>(() => {
   scoped
 >
   .dashboard-report-card {
-    @apply border px-2 py-1 rounded-md border-slate-600;
+    @apply border px-2 py-1 rounded-md border-slate-600 grid;
+
+    grid-template-areas:
+      "symbol price"
+      "name ."
+      "previous-close previous-close-change";
+
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
 
     .symbol {
+      grid-area: symbol;
       @apply text-xl tracking-widest;
     }
 
     .name {
+      grid-area: name;
       @apply font-light text-sm overflow-hidden;
+    }
+
+    .price {
+      grid-area: price;
+    }
+
+    .previous-close {
+      grid-area: previous-close;
+    }
+
+    .previous-close-change {
+      grid-area: previous-close-change;
+    }
+
+    .previous-close-change-percentage {
+      grid-area: previous-close-change-percentage;
     }
   }
 </style>
