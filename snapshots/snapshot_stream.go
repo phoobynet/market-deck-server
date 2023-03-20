@@ -267,8 +267,35 @@ func (s *Stream) fillYtdBars(symbols []string) {
 		logrus.Errorf("failed to get YTD bars: %v", err)
 	}
 
+	// every symbol share the
+	pickIndexes := make([]int, len(s.changeDates))
+	picked := false
+
 	for symbol, ytdBars := range ytdMulti {
-		s.ytdBars.Set(symbol, ytdBars)
+		if !picked {
+			for _, d := range s.changeDates {
+				_, barIndex, found := lo.FindIndexOf[bars.Bar](ytdBars, func(bar bars.Bar) bool {
+					return bar.Timestamp >= d.TimestampMicro()
+				})
+
+				if found {
+					pickIndexes = append(pickIndexes, barIndex)
+				}
+			}
+
+			picked = true
+		}
+
+		pickedBars := make([]bars.Bar, len(pickIndexes))
+
+		// pick the bars
+		for _, index := range pickIndexes {
+			pickedBars = append(pickedBars, ytdBars[index])
+		}
+
+		s.ytdBars.Set(symbol, pickedBars)
+
+		logrus.Infof("%v", pickedBars)
 	}
 }
 
