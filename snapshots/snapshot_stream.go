@@ -39,7 +39,8 @@ type Stream struct {
 	dailyBars      cmap.ConcurrentMap[string, bars.Bar]
 	prevDailyBars  cmap.ConcurrentMap[string, bars.Bar]
 	previousCloses cmap.ConcurrentMap[string, float64]
-	bars           cmap.ConcurrentMap[string, []bars.Bar]
+	intradayBars   cmap.ConcurrentMap[string, []bars.Bar]
+	ytdBars        cmap.ConcurrentMap[string, []bars.Bar]
 
 	symbols []string
 }
@@ -60,7 +61,8 @@ func NewSnapshotStream(
 		barChan:             make(chan map[string]bars.Bar, 1_000),
 		quoteChan:           make(chan map[string]quotes.Quote, 1_000),
 		tradeChan:           make(chan map[string]trades.Trade, 1_000),
-		bars:                cmap.New[[]bars.Bar](),
+		intradayBars:        cmap.New[[]bars.Bar](),
+		ytdBars:             cmap.New[[]bars.Bar](),
 		barRepository:       barRepository,
 		symbols:             make([]string, 0),
 		latestBars:          cmap.New[bars.Bar](),
@@ -83,9 +85,9 @@ func NewSnapshotStream(
 				s.latestBars.MSet(barsMap)
 
 				for _, symbol := range s.symbols {
-					existingBars, _ := s.bars.Get(symbol)
+					existingBars, _ := s.intradayBars.Get(symbol)
 					latestBar, _ := s.latestBars.Get(symbol)
-					s.bars.Set(symbol, append(existingBars, latestBar))
+					s.intradayBars.Set(symbol, append(existingBars, latestBar))
 				}
 			case quotesMap := <-s.quoteChan:
 				s.latestQuotes.MSet(quotesMap)
@@ -177,7 +179,7 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 			s.prevDailyBars.Remove(symbol)
 			s.previousCloses.Remove(symbol)
 			s.dailyBars.Remove(symbol)
-			s.bars.Remove(symbol)
+			s.intradayBars.Remove(symbol)
 		}
 	}
 
@@ -188,6 +190,8 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 
 		// run in the background is fine
 		go s.fillIntradayBars(addedSymbols)
+
+		go s.fillYtdBars(addedSymbols)
 	}
 
 	s.barStream.Update(symbols)
@@ -225,7 +229,23 @@ func (s *Stream) fillIntradayBars(symbols []string) {
 	}
 
 	for symbol, intraday := range intradayMulti {
-		s.bars.Set(symbol, intraday)
+		s.intradayBars.Set(symbol, intraday)
+	}
+}
+
+func (s *Stream) fillYtdBars(symbols []string) {
+	if len(symbols) == 0 {
+		return
+	}
+
+	ytdMulti, err := s.barRepository.GetYtdDailyMulti(symbols)
+
+	if err != nil {
+		logrus.Errorf("failed to get YTD bars: %v", err)
+	}
+
+	for symbol, ytdBars := range ytdMulti {
+		s.ytdBars.Set(symbol, ytdBars)
 	}
 }
 
@@ -233,5 +253,11 @@ func (s *Stream) GetIntradayBars() map[string][]bars.Bar {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	return s.bars.Items()
+	return s.intradayBars.Items()
+}
+func (s *Stream) GetYtdBars() map[string][]bars.Bar {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.ytdBars.Items()
 }

@@ -225,6 +225,14 @@ func NewServer(
 		},
 	)
 
+	router.GET(
+		"/api/bars/ytd", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			bars := snapshotStream.GetYtdBars()
+
+			_ = writeJSON(w, http.StatusOK, bars)
+		},
+	)
+
 	webServer.mux.Handle("/", http.FileServer(http.FS(fsys)))
 	webServer.mux.Handle("/api/", myCors.Handler(router))
 
