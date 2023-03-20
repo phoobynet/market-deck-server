@@ -29,7 +29,7 @@ const percentChange = computed(() => {
     <div>
       <ReportCardChangeIndicator :sign="sign" />
     </div>
-    <div class="price-change">{{signSymbol}} {{ priceChange }}</div>
+    <div class="price-change"><span class="tracking-widest">{{ signSymbol }}</span>{{ priceChange }}</div>
     <div class="percent-change">({{ percentChange }})</div>
   </div>
 </template>
@@ -39,7 +39,7 @@ const percentChange = computed(() => {
   scoped
 >
   .change {
-    @apply flex items-center justify-end gap-2 tabular-nums;
+    @apply flex items-center justify-end gap-1 tabular-nums;
 
     &[data-sign="1"] {
       @apply text-up;

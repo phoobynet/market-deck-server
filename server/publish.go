@@ -15,7 +15,7 @@ func Publish(message messages.Message) {
 	jsonData, err := json.Marshal(message)
 
 	if err != nil {
-		logrus.Errorf("Error marshalling message: %s", err)
+		logrus.Errorf("Error marshalling message: %s\n%v", err, message.Data)
 	}
 
 	sseServer.Publish(

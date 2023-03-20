@@ -26,13 +26,23 @@ type Stream struct {
 	quoteChan           chan map[string]quotes.Quote
 	tradeChan           chan map[string]trades.Trade
 	snapshotsRepository *Repository
-	mu                  sync.RWMutex
-	snapshots           map[string]Snapshot
-	bars                map[string][]bars.Bar
 	publishTicker       *time.Ticker
 	publishInterval     time.Duration
 	snapshotScheduler   *gocron.Scheduler
 	barRepository       *bars.Repository
+
+	mu sync.RWMutex
+
+	// live and frequently updated data which is used to calculate snapshots
+	latestBars     map[string]bars.Bar
+	latestTrades   map[string]trades.Trade
+	latestQuotes   map[string]quotes.Quote
+	dailyBars      map[string]bars.Bar
+	prevDailyBars  map[string]bars.Bar
+	previousCloses map[string]float64
+	bars           map[string][]bars.Bar
+
+	symbols []string
 }
 
 func NewSnapshotStream(
@@ -46,7 +56,6 @@ func NewSnapshotStream(
 	s := &Stream{
 		deckRepository:      deckRepository,
 		snapshotsRepository: snapshotsRepository,
-		snapshots:           make(map[string]Snapshot),
 		publishInterval:     1 * time.Second,
 		publishTicker:       time.NewTicker(1 * time.Second),
 		barChan:             make(chan map[string]bars.Bar, 1_000),
@@ -54,6 +63,13 @@ func NewSnapshotStream(
 		tradeChan:           make(chan map[string]trades.Trade, 1_000),
 		bars:                make(map[string][]bars.Bar, 0),
 		barRepository:       barRepository,
+		symbols:             make([]string, 0),
+		latestBars:          make(map[string]bars.Bar, 0),
+		latestTrades:        make(map[string]trades.Trade, 0),
+		latestQuotes:        make(map[string]quotes.Quote, 0),
+		dailyBars:           make(map[string]bars.Bar, 0),
+		prevDailyBars:       make(map[string]bars.Bar, 0),
+		previousCloses:      make(map[string]float64, 0),
 	}
 
 	s.barStream = bars.NewBarStream(ctx, sc, s.barChan)
@@ -71,62 +87,69 @@ func NewSnapshotStream(
 		Every(1).
 		Minute().
 		StartAt(snapshotRefreshStartAt).
-		Do(s.refreshSnapshot)
+		Do(
+			func() {
+				s.refreshSnapshot(s.symbols)
+			},
+		)
 
 	if err != nil {
 		logrus.Errorf("failed to create snapshot job: %v", err)
 	}
 
-	go func(l *Stream) {
+	go func(s *Stream) {
 		for {
 			select {
-			case barsMap := <-l.barChan:
-				l.mu.Lock()
-				for symbol, bar := range barsMap {
-					if snapshot, ok := l.snapshots[symbol]; ok {
-						snapshot.LatestBar = bar
-						l.snapshots[symbol] = snapshot
-					}
-					l.bars[symbol] = append(l.bars[symbol], bar)
-				}
-				l.mu.Unlock()
-			case quotesMap := <-l.quoteChan:
-				l.mu.Lock()
-				for symbol, quote := range quotesMap {
-					if snapshot, ok := l.snapshots[symbol]; ok {
-						snapshot.LatestQuote = quote
-						l.snapshots[symbol] = snapshot
-					}
-				}
-				l.mu.Unlock()
-			case tradesMap := <-l.tradeChan:
-				l.mu.Lock()
+			case barsMap := <-s.barChan:
+				s.mu.Lock()
 
-				for symbol, latestTrade := range tradesMap {
-					if snapshot, ok := l.snapshots[symbol]; ok {
-						diff := numbers.NumberDiff(l.snapshots[symbol].PreviousClose, latestTrade.Price)
+				s.latestBars = barsMap
 
-						snapshot.Change = diff.Change
-						snapshot.ChangePercent = diff.ChangePercent
-						snapshot.ChangeSign = diff.Sign
-						snapshot.ChangeAbs = diff.AbsoluteChange
-						snapshot.LatestTrade = latestTrade
-						l.snapshots[symbol] = snapshot
-					}
-
+				for _, symbol := range s.symbols {
+					s.bars[symbol] = append(s.bars[symbol], barsMap[symbol])
 				}
 
-				l.mu.Unlock()
-			case <-l.publishTicker.C:
-				l.mu.Lock()
+				s.mu.Unlock()
+			case quotesMap := <-s.quoteChan:
+				s.mu.Lock()
+				s.latestQuotes = quotesMap
+				s.mu.Unlock()
+			case tradesMap := <-s.tradeChan:
+				s.mu.Lock()
+				s.latestTrades = tradesMap
+				s.mu.Unlock()
+			case <-s.publishTicker.C:
+				s.mu.RLock()
+				data := make(map[string]Snapshot)
+
+				for _, symbol := range s.symbols {
+					snapshot := Snapshot{
+						LatestBar:        s.latestBars[symbol],
+						LatestQuote:      s.latestQuotes[symbol],
+						LatestTrade:      s.latestTrades[symbol],
+						DailyBar:         s.dailyBars[symbol],
+						PreviousDailyBar: s.prevDailyBars[symbol],
+						PreviousClose:    s.previousCloses[symbol],
+					}
+
+					diff := numbers.NumberDiff(snapshot.LatestTrade.Price, snapshot.PreviousClose)
+
+					snapshot.Change = diff.Change
+					snapshot.ChangePercent = diff.ChangePercent
+					snapshot.ChangeAbs = diff.AbsoluteChange
+					snapshot.ChangeSign = diff.Sign
+
+					data[symbol] = snapshot
+				}
+
 				messageBus <- messages.Message{
 					Event: messages.Snapshots,
-					Data:  l.snapshots,
+					Data:  data,
 				}
-				l.mu.Unlock()
+				s.mu.RUnlock()
 			case <-ctx.Done():
-				l.snapshotScheduler.Stop()
-				l.publishTicker.Stop()
+				s.snapshotScheduler.Stop()
+				s.publishTicker.Stop()
 			}
 		}
 	}(s)
@@ -135,11 +158,11 @@ func NewSnapshotStream(
 }
 
 func (s *Stream) UpdateSymbols(symbols []string) {
-	s.publishTicker.Stop()
-	defer s.publishTicker.Reset(s.publishInterval)
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	s.publishTicker.Stop()
+	defer s.publishTicker.Reset(s.publishInterval)
 
 	_, err := s.deckRepository.UpdateByName("default", symbols)
 
@@ -147,29 +170,33 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 		logrus.Fatalf("failed to update symbols: %v", err)
 	}
 
-	oldSymbols := lo.Keys(s.snapshots)
-
-	removedSymbols, addedSymbols := lo.Difference(oldSymbols, symbols)
+	removedSymbols, addedSymbols := lo.Difference(s.symbols, symbols)
 
 	if len(removedSymbols) > 0 {
+		s.symbols = lo.Filter(
+			s.symbols, func(symbol string, _ int) bool {
+				return !lo.Contains(removedSymbols, symbol)
+			},
+		)
+
 		for _, symbol := range removedSymbols {
-			delete(s.snapshots, symbol)
+			delete(s.latestBars, symbol)
+			delete(s.latestQuotes, symbol)
+			delete(s.latestBars, symbol)
+			delete(s.prevDailyBars, symbol)
+			delete(s.previousCloses, symbol)
+			delete(s.dailyBars, symbol)
 			delete(s.bars, symbol)
 		}
 	}
 
 	if len(addedSymbols) > 0 {
-		snapshots, err := s.snapshotsRepository.GetMulti(symbols)
+		s.symbols = append(s.symbols, addedSymbols...)
 
-		if err != nil {
-			logrus.Errorf("failed to get snapshots: %v\n", err)
-		}
+		s.refreshSnapshot(addedSymbols)
 
-		for symbol, snapshot := range snapshots {
-			s.snapshots[symbol] = snapshot
-		}
-
-		go s.fillIntradayBars(symbols)
+		// run in the background is fine
+		go s.fillIntradayBars(addedSymbols)
 	}
 
 	s.barStream.Update(symbols)
@@ -178,30 +205,21 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 
 }
 
-func (s *Stream) refreshSnapshot() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	snapshots, err := s.snapshotsRepository.GetMulti(lo.Keys(s.snapshots))
+func (s *Stream) refreshSnapshot(symbols []string) {
+	snapshots, err := s.snapshotsRepository.GetMulti(symbols)
 
 	if err != nil {
 		logrus.Errorf("failed to get snapshots: %v", err)
 	}
 
-	for symbol, snapshot := range snapshots {
-		if existingSnapshot, ok := s.snapshots[symbol]; ok {
-			existingSnapshot.DailyBar = snapshot.DailyBar
-			existingSnapshot.PreviousDailyBar = snapshot.PreviousDailyBar
-			existingSnapshot.PreviousClose = snapshot.PreviousClose
-			s.snapshots[symbol] = existingSnapshot
-		}
+	for _, symbol := range symbols {
+		s.dailyBars[symbol] = snapshots[symbol].DailyBar
+		s.prevDailyBars[symbol] = snapshots[symbol].PreviousDailyBar
+		s.previousCloses[symbol] = snapshots[symbol].PreviousClose
 	}
 }
 
 func (s *Stream) fillIntradayBars(symbols []string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	intradayMulti, err := s.barRepository.GetIntradayMulti(symbols)
 
 	if err != nil {
