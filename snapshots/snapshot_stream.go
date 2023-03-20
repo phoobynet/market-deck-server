@@ -3,7 +3,7 @@ package snapshots
 import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
-	"github.com/go-co-op/gocron"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/helpers/numbers"
@@ -28,19 +28,18 @@ type Stream struct {
 	publishTicker       *time.Ticker
 	publishInterval     time.Duration
 	refreshTicker       *time.Ticker
-	snapshotScheduler   *gocron.Scheduler
 	barRepository       *bars.Repository
 
 	mu sync.RWMutex
 
 	// live and frequently updated data which is used to calculate snapshots
-	latestBars     map[string]bars.Bar
-	latestTrades   map[string]trades.Trade
-	latestQuotes   map[string]quotes.Quote
-	dailyBars      map[string]bars.Bar
-	prevDailyBars  map[string]bars.Bar
-	previousCloses map[string]float64
-	bars           map[string][]bars.Bar
+	latestBars     cmap.ConcurrentMap[string, bars.Bar]
+	latestTrades   cmap.ConcurrentMap[string, trades.Trade]
+	latestQuotes   cmap.ConcurrentMap[string, quotes.Quote]
+	dailyBars      cmap.ConcurrentMap[string, bars.Bar]
+	prevDailyBars  cmap.ConcurrentMap[string, bars.Bar]
+	previousCloses cmap.ConcurrentMap[string, float64]
+	bars           cmap.ConcurrentMap[string, []bars.Bar]
 
 	symbols []string
 }
@@ -61,56 +60,56 @@ func NewSnapshotStream(
 		barChan:             make(chan map[string]bars.Bar, 1_000),
 		quoteChan:           make(chan map[string]quotes.Quote, 1_000),
 		tradeChan:           make(chan map[string]trades.Trade, 1_000),
-		bars:                make(map[string][]bars.Bar, 0),
+		bars:                cmap.New[[]bars.Bar](),
 		barRepository:       barRepository,
 		symbols:             make([]string, 0),
-		latestBars:          make(map[string]bars.Bar, 0),
-		latestTrades:        make(map[string]trades.Trade, 0),
-		latestQuotes:        make(map[string]quotes.Quote, 0),
-		dailyBars:           make(map[string]bars.Bar, 0),
-		prevDailyBars:       make(map[string]bars.Bar, 0),
-		previousCloses:      make(map[string]float64, 0),
+		latestBars:          cmap.New[bars.Bar](),
+		latestTrades:        cmap.New[trades.Trade](),
+		latestQuotes:        cmap.New[quotes.Quote](),
+		dailyBars:           cmap.New[bars.Bar](),
+		prevDailyBars:       cmap.New[bars.Bar](),
+		previousCloses:      cmap.New[float64](),
 		refreshTicker:       time.NewTicker(1 * time.Second),
 	}
 
 	s.barStream = bars.NewBarStream(ctx, sc, s.barChan)
 	s.tradeStream = trades.NewTradeStream(ctx, sc, s.tradeChan)
 	s.quoteStream = quotes.NewQuoteStream(ctx, sc, s.quoteChan)
-	s.snapshotScheduler = gocron.NewScheduler(time.UTC)
 
 	go func(s *Stream) {
 		for {
 			select {
 			case barsMap := <-s.barChan:
-				s.mu.Lock()
-
-				s.latestBars = barsMap
+				s.latestBars.MSet(barsMap)
 
 				for _, symbol := range s.symbols {
-					s.bars[symbol] = append(s.bars[symbol], barsMap[symbol])
+					existingBars, _ := s.bars.Get(symbol)
+					latestBar, _ := s.latestBars.Get(symbol)
+					s.bars.Set(symbol, append(existingBars, latestBar))
 				}
-
-				s.mu.Unlock()
 			case quotesMap := <-s.quoteChan:
-				s.mu.Lock()
-				s.latestQuotes = quotesMap
-				s.mu.Unlock()
+				s.latestQuotes.MSet(quotesMap)
 			case tradesMap := <-s.tradeChan:
-				s.mu.Lock()
-				s.latestTrades = tradesMap
-				s.mu.Unlock()
+				s.latestTrades.MSet(tradesMap)
 			case <-s.publishTicker.C:
 				s.mu.RLock()
 				data := make(map[string]Snapshot)
 
 				for _, symbol := range s.symbols {
+					latestTrade, _ := s.latestTrades.Get(symbol)
+					latestBar, _ := s.latestBars.Get(symbol)
+					latestQuote, _ := s.latestQuotes.Get(symbol)
+					dailyBar, _ := s.dailyBars.Get(symbol)
+					prevDailyBar, _ := s.prevDailyBars.Get(symbol)
+					previousClose, _ := s.previousCloses.Get(symbol)
+
 					snapshot := Snapshot{
-						LatestBar:        s.latestBars[symbol],
-						LatestQuote:      s.latestQuotes[symbol],
-						LatestTrade:      s.latestTrades[symbol],
-						DailyBar:         s.dailyBars[symbol],
-						PreviousDailyBar: s.prevDailyBars[symbol],
-						PreviousClose:    s.previousCloses[symbol],
+						LatestBar:        latestBar,
+						LatestQuote:      latestQuote,
+						LatestTrade:      latestTrade,
+						DailyBar:         dailyBar,
+						PreviousDailyBar: prevDailyBar,
+						PreviousClose:    previousClose,
 					}
 
 					diff := numbers.NumberDiff(snapshot.PreviousClose, snapshot.LatestTrade.Price)
@@ -139,7 +138,6 @@ func NewSnapshotStream(
 					s.mu.Unlock()
 				}
 			case <-ctx.Done():
-				s.snapshotScheduler.Stop()
 				s.publishTicker.Stop()
 				s.refreshTicker.Stop()
 			}
@@ -172,13 +170,14 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 		)
 
 		for _, symbol := range removedSymbols {
-			delete(s.latestBars, symbol)
-			delete(s.latestQuotes, symbol)
-			delete(s.latestBars, symbol)
-			delete(s.prevDailyBars, symbol)
-			delete(s.previousCloses, symbol)
-			delete(s.dailyBars, symbol)
-			delete(s.bars, symbol)
+			s.latestTrades.Remove(symbol)
+			s.latestBars.Remove(symbol)
+			s.latestQuotes.Remove(symbol)
+			s.latestBars.Remove(symbol)
+			s.prevDailyBars.Remove(symbol)
+			s.previousCloses.Remove(symbol)
+			s.dailyBars.Remove(symbol)
+			s.bars.Remove(symbol)
 		}
 	}
 
@@ -204,9 +203,9 @@ func (s *Stream) refreshSnapshot(symbols []string) {
 	}
 
 	for _, symbol := range symbols {
-		s.dailyBars[symbol] = snapshots[symbol].DailyBar
-		s.prevDailyBars[symbol] = snapshots[symbol].PreviousDailyBar
-		s.previousCloses[symbol] = snapshots[symbol].PreviousClose
+		s.dailyBars.Set(symbol, snapshots[symbol].DailyBar)
+		s.prevDailyBars.Set(symbol, snapshots[symbol].PreviousDailyBar)
+		s.previousCloses.Set(symbol, snapshots[symbol].PreviousClose)
 	}
 }
 
@@ -218,7 +217,7 @@ func (s *Stream) fillIntradayBars(symbols []string) {
 	}
 
 	for symbol, intraday := range intradayMulti {
-		s.bars[symbol] = intraday
+		s.bars.Set(symbol, intraday)
 	}
 }
 
@@ -226,5 +225,5 @@ func (s *Stream) GetIntradayBars() map[string][]bars.Bar {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	return s.bars
+	return s.bars.Items()
 }
