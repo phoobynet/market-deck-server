@@ -8,6 +8,7 @@ import { useSnapshotsStore } from '@/stores/useSnapshotsStore'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/useAssetsStore'
 import { Asset, Snapshot, Trade } from '@/types'
+import Percentage from '@/components/formatting/Percentage.vue'
 
 const props = defineProps<{
   symbol: string
@@ -63,11 +64,11 @@ const change = computed<number>(() => {
 <template>
   <div
     v-if="symbol && snapshot && asset"
-    class="dashboard-report-card"
+    class="report-card"
   >
     <div class="symbol">{{ symbol }}</div>
     <div class="name">{{ assetName }}</div>
-    <div class="price">
+    <div class="latest-price">
       <Money
         :amount="latestTrade?.p"
         :show-sign="false"
@@ -83,7 +84,7 @@ const change = computed<number>(() => {
       />
     </div>
     <div class="previous-close-change-percentage">
-      %{{ previousClosePercentChange }}
+      <Percentage :amount="previousClosePercentChange"></Percentage>
     </div>
     <div class="previous-close">
       <Money
@@ -99,15 +100,15 @@ const change = computed<number>(() => {
   lang="scss"
   scoped
 >
-  .dashboard-report-card {
+  .report-card {
     @apply border px-2 py-1 rounded-md border-slate-600 grid;
 
     grid-template-areas:
-      "symbol price"
-      "name ."
-      "previous-close previous-close-change";
+      "symbol price price"
+      "name name name"
+      "previous-close previous-close-change previous-close-change-percentage";
 
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
 
     .symbol {
@@ -120,8 +121,9 @@ const change = computed<number>(() => {
       @apply font-light text-sm overflow-hidden;
     }
 
-    .price {
+    .latest-price {
       grid-area: price;
+      @apply justify-self-end text-xl;
     }
 
     .previous-close {

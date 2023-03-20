@@ -9,7 +9,8 @@ const props = defineProps<{
   amount?: number
   showSign?: boolean
   currency?: string
-  sexy?: boolean
+  sign?: number
+  change?: number
 }>()
 
 const formatted = computed(() => {
@@ -18,10 +19,10 @@ const formatted = computed(() => {
   }
 
   let sign = ''
-  if (props.showSign) {
-    sign = props.amount! > 0
-      ? '+'
-      : '-'
+  if (props.sign) {
+    sign = props.sign === -1
+      ? '-'
+      : '+'
   }
 
   return `${props.currency ?? ''}${sign}${numeral(Math.abs(props.amount)).format('0,0.00')}`
@@ -29,7 +30,6 @@ const formatted = computed(() => {
 
 const classes = computed(() => {
   return {
-    'sexy': props.sexy ?? false,
     'tabular-nums': true,
   }
 })
@@ -51,18 +51,3 @@ const sign = computed(() => {
     :data-sign="sign"
   >{{ formatted }}</span>
 </template>
-
-<style
-  lang="scss"
-  scoped
->
-  .sexy {
-    &[data-sign='+'] {
-      @apply text-green-400;
-    }
-
-    &[data-sign='-'] {
-      @apply text-red-400;
-    }
-  }
-</style>

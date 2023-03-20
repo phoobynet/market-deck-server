@@ -10,7 +10,7 @@ import Tags from '@/components/Tags.vue'
 import { debouncedWatch } from '@vueuse/core'
 import { updateSymbols } from '@/libs/updateSymbols'
 import { getSymbols } from '@/libs/getSymbols'
-import DashboardReportCard from '@/routes/dashboard/DashboardReportCard.vue'
+import ReportCard from '@/components/ReportCard/ReportCard.vue'
 
 const snapshotsStore = useSnapshotsStore()
 
@@ -61,12 +61,12 @@ onMounted(async () => {
       @change="tags = $event"
       placeholder="Enter symbol and press Space or Enter"
     />
-    <main class="grid grid-cols-6 gap-1 mt-3">
+    <main class="grid lg:grid-cols-5 md:grid-cols-3 sm:grid-cols-2 xs:grid-cols-1 gap-1 mt-3">
       <transition-group
         enter-active-class="animate__animated animate__fadeIn animate__faster"
         leave-active-class="animate__animated animate__fadeOut animate__faster"
       >
-        <DashboardReportCard
+        <ReportCard
           v-for="symbol of symbols"
           :key="symbol"
           :symbol="symbol"
