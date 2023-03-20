@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
 	"github.com/golang-module/carbon/v2"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/helpers/date"
 	"github.com/phoobynet/market-deck-server/messages"
 	"sync"
@@ -16,7 +17,7 @@ type CalendarDayLive struct {
 	repository        *CalendarDayRepository
 	publishTicker     *time.Ticker
 	calendarDays      []CalendarDay
-	calendarDaysMap   map[string]CalendarDay
+	calendarDaysMap   cmap.ConcurrentMap[string, CalendarDay]
 	calendarDayUpdate CalendarDayUpdate
 	ctx               context.Context
 	nyTimezone        carbon.Carbon
@@ -33,7 +34,7 @@ func NewCalendarDayLive(
 		publishTicker:   time.NewTicker(1 * time.Second),
 		nyTimezone:      date.GetNewYorkZone(),
 		calendarDays:    make([]CalendarDay, 0),
-		calendarDaysMap: make(map[string]CalendarDay),
+		calendarDaysMap: cmap.New[CalendarDay](),
 		repository:      calendarDayRepository,
 	}
 
@@ -64,7 +65,7 @@ func (l *CalendarDayLive) populateMarketDates() {
 	l.calendarDays = l.repository.GetBetween(start, end.ToStdTime())
 
 	for _, marketDate := range l.calendarDays {
-		l.calendarDaysMap[marketDate.Date] = marketDate
+		l.calendarDaysMap.Set(marketDate.Date, marketDate)
 	}
 }
 
@@ -78,7 +79,7 @@ func (l *CalendarDayLive) update() {
 
 	dateKey := now.Format("Y-m-d")
 
-	if marketDate, ok := l.calendarDaysMap[dateKey]; ok {
+	if marketDate, ok := l.calendarDaysMap.Get(dateKey); ok {
 		if nowUtcMicro >= marketDate.PostMarketClose {
 			l.calendarDayUpdate.Condition = ClosedForTheDay
 		} else if nowUtcMicro >= marketDate.Close {

@@ -3,6 +3,7 @@ package assets
 import (
 	"fmt"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/schollz/closestmatch"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -11,7 +12,7 @@ import (
 
 type AssetRepository struct {
 	alpacaClient *alpaca.Client
-	assets       map[string]Asset
+	assets       cmap.ConcurrentMap[string, Asset]
 	populated    bool
 	db           *gorm.DB
 	search       []string
@@ -21,7 +22,7 @@ type AssetRepository struct {
 func NewAssetRepository(db *gorm.DB, alpacaClient *alpaca.Client) *AssetRepository {
 	a := &AssetRepository{
 		alpacaClient: alpacaClient,
-		assets:       make(map[string]Asset),
+		assets:       cmap.New[Asset](),
 		populated:    false,
 		db:           db,
 	}
@@ -86,7 +87,7 @@ func (a *AssetRepository) Search(searchPattern string) []Asset {
 	for _, result := range results {
 		symbol := strings.Split(result, " ")[0]
 
-		if asset, ok := a.assets[symbol]; ok {
+		if asset, ok := a.assets.Get(symbol); ok {
 			if asset.Symbol == possibleSymbol {
 				logrus.Printf("Exact symbol match found %s", possibleSymbol)
 				exactSymbolMatchAsset = asset
@@ -132,7 +133,7 @@ func (a *AssetRepository) populate() {
 		for _, alpacaAsset := range alpacaAssets {
 			asset := FromAlpacaAsset(alpacaAsset)
 			assets = append(assets, asset)
-			a.assets[alpacaAsset.Symbol] = asset
+			a.assets.Set(alpacaAsset.Symbol, asset)
 		}
 
 		a.db.Create(assets)
@@ -142,15 +143,17 @@ func (a *AssetRepository) populate() {
 		a.db.Model(&Asset{}).Find(&assets)
 
 		for _, asset := range assets {
-			a.assets[asset.Symbol] = asset
+			a.assets.Set(asset.Symbol, asset)
 		}
 	}
 
-	a.search = make([]string, len(a.assets))
+	a.search = make([]string, a.assets.Count())
 
-	for _, asset := range a.assets {
-		a.search = append(a.search, fmt.Sprintf("%s %s", asset.Symbol, asset.Name))
-	}
+	a.assets.IterCb(
+		func(key string, asset Asset) {
+			a.search = append(a.search, fmt.Sprintf("%s %s", asset.Symbol, asset.Name))
+		},
+	)
 
 	a.cm = closestmatch.New(a.search, []int{3})
 

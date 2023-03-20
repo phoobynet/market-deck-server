@@ -15,7 +15,9 @@ const volume = computed(() => {
 </script>
 
 <template>
-  <div class="text-xs">{{ volume}}</div>
+  <div class="text-xs tabular-nums">
+    <span class="opacity-60">Volume:</span> {{ volume }}
+  </div>
 </template>
 
 <style

@@ -95,7 +95,7 @@ provide(SignSymbolKey, signSymbol)
       "symbol latest-price latest-price"
       ". change change"
       "previous-close previous-close previous-close"
-      "daily-volume . .";
+      ". .daily-volume";
 
     .symbol {
       grid-area: symbol;
@@ -123,6 +123,7 @@ provide(SignSymbolKey, signSymbol)
 
     .daily-volume {
       grid-area: daily-volume;
+      @apply justify-self-end;
     }
 
     .exchange {

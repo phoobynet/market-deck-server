@@ -3,6 +3,7 @@ package bars
 import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -13,7 +14,7 @@ type Stream struct {
 	mu            sync.RWMutex
 	sc            *stream.StocksClient
 	symbols       []string
-	bars          map[string]Bar
+	bars          cmap.ConcurrentMap[string, Bar]
 	streamChan    chan stream.Bar
 	barChan       chan Bar
 	unpublished   bool
@@ -28,7 +29,7 @@ func NewBarStream(ctx context.Context, sc *stream.StocksClient, publishChan chan
 		barChan:       make(chan Bar, 1_000),
 		unpublished:   true,
 		publishTicker: time.NewTicker(5 * time.Second),
-		bars:          make(map[string]Bar),
+		bars:          cmap.New[Bar](),
 	}
 
 	go func(ctx context.Context, s *Stream, publishChan chan<- map[string]Bar) {
@@ -39,19 +40,19 @@ func NewBarStream(ctx context.Context, sc *stream.StocksClient, publishChan chan
 			case bar := <-s.barChan:
 				s.mu.Lock()
 				s.unpublished = true
-				s.bars[bar.Symbol] = bar
+				s.bars.Set(bar.Symbol, bar)
 				s.mu.Unlock()
 			case <-s.publishTicker.C:
 				s.mu.Lock()
 				if s.unpublished {
-					publishChan <- s.bars
+					publishChan <- s.bars.Items()
 				}
 
 				s.unpublished = false
 				s.mu.Unlock()
 			case <-ctx.Done():
 				s.publishTicker.Stop()
-				err := s.sc.UnsubscribeFromBars(lo.Keys(s.bars)...)
+				err := s.sc.UnsubscribeFromBars(s.bars.Keys()...)
 				if err != nil {
 					logrus.Errorf("failed to unsubscribe from bars: %s", err)
 				}
@@ -76,7 +77,7 @@ func (s *Stream) Update(symbols []string) {
 		}
 
 		for _, symbol := range removedSymbols {
-			delete(s.bars, symbol)
+			s.bars.Remove(symbol)
 		}
 	}
 

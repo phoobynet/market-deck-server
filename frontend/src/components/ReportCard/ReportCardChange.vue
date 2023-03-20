@@ -5,7 +5,7 @@
 import { SignKey, SignSymbolKey, SnapshotKey } from '@/components/ReportCard/injectionKeys'
 import { computed, inject } from 'vue'
 import { formatMoneyNoSymbol } from '@/libs/helpers/formatMoney'
-import { formatPercent } from '@/libs/helpers/formatPercent'
+import { formatPercent, formatPercentAbs } from '@/libs/helpers/formatPercent'
 import ReportCardChangeIndicator from '@/components/ReportCard/ReportCardChangeIndicator.vue'
 
 const snapshot = inject(SnapshotKey)
@@ -17,7 +17,7 @@ const priceChange = computed(() => {
 })
 
 const percentChange = computed(() => {
-  return formatPercent(snapshot?.value?.cp ?? 0)
+  return formatPercentAbs(snapshot?.value?.cp ?? 0)
 })
 </script>
 

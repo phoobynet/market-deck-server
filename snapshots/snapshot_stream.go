@@ -93,7 +93,8 @@ func NewSnapshotStream(
 				s.latestTrades.MSet(tradesMap)
 			case <-s.publishTicker.C:
 				s.mu.RLock()
-				data := make(map[string]Snapshot)
+
+				data := cmap.New[Snapshot]()
 
 				for _, symbol := range s.symbols {
 					latestTrade, _ := s.latestTrades.Get(symbol)
@@ -119,15 +120,14 @@ func NewSnapshotStream(
 					snapshot.ChangeAbs = diff.AbsoluteChange
 					snapshot.ChangeSign = diff.Sign
 
-					data[symbol] = snapshot
+					data.Set(symbol, snapshot)
 				}
-
-				s.mu.RUnlock()
 
 				messageBus <- messages.Message{
 					Event: messages.Snapshots,
-					Data:  data,
+					Data:  data.Items(),
 				}
+				s.mu.RUnlock()
 			case <-s.refreshTicker.C:
 				sec := time.Now().Second()
 

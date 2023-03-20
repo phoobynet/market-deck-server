@@ -3,6 +3,7 @@ package trades
 import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -13,7 +14,7 @@ type Stream struct {
 	mu            sync.RWMutex
 	sc            *stream.StocksClient
 	symbols       []string
-	trades        map[string]Trade
+	trades        cmap.ConcurrentMap[string, Trade]
 	streamChan    chan stream.Trade
 	tradeChan     chan Trade
 	unpublished   bool
@@ -30,7 +31,7 @@ func NewTradeStream(ctx context.Context, sc *stream.StocksClient, publishChan ch
 		unpublished:   true,
 		publishTicker: time.NewTicker(1 * time.Second),
 		publishChan:   publishChan,
-		trades:        make(map[string]Trade),
+		trades:        cmap.New[Trade](),
 	}
 
 	go func(ctx context.Context, s *Stream) {
@@ -41,19 +42,19 @@ func NewTradeStream(ctx context.Context, sc *stream.StocksClient, publishChan ch
 			case trade := <-s.tradeChan:
 				s.mu.Lock()
 				s.unpublished = true
-				s.trades[trade.Symbol] = trade
+				s.trades.Set(trade.Symbol, trade)
 				s.mu.Unlock()
 			case <-s.publishTicker.C:
 				s.mu.Lock()
 				if s.unpublished {
-					s.publishChan <- s.trades
+					s.publishChan <- s.trades.Items()
 				}
 
 				s.unpublished = false
 				s.mu.Unlock()
 			case <-ctx.Done():
 				s.publishTicker.Stop()
-				err := s.sc.UnsubscribeFromTrades(lo.Keys(s.trades)...)
+				err := s.sc.UnsubscribeFromTrades(s.trades.Keys()...)
 
 				if err != nil {
 					logrus.Errorf("failed to unsubscribe from trades: %s", err)
@@ -79,7 +80,7 @@ func (s *Stream) Update(symbols []string) {
 		}
 
 		for _, symbol := range removedSymbols {
-			delete(s.trades, symbol)
+			s.trades.Remove(symbol)
 		}
 	}
 
