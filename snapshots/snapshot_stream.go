@@ -3,9 +3,11 @@ package snapshots
 import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
+	"github.com/golang-module/carbon/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/decks"
+	"github.com/phoobynet/market-deck-server/helpers/date"
 	"github.com/phoobynet/market-deck-server/helpers/numbers"
 	"github.com/phoobynet/market-deck-server/messages"
 	"github.com/phoobynet/market-deck-server/quotes"
@@ -43,6 +45,8 @@ type Stream struct {
 	ytdBars        cmap.ConcurrentMap[string, []bars.Bar]
 
 	symbols []string
+
+	changeDates []carbon.Carbon
 }
 
 func NewSnapshotStream(
@@ -77,6 +81,16 @@ func NewSnapshotStream(
 	s.barStream = bars.NewBarStream(ctx, sc, s.barChan)
 	s.tradeStream = trades.NewTradeStream(ctx, sc, s.tradeChan)
 	s.quoteStream = quotes.NewQuoteStream(ctx, sc, s.quoteChan)
+
+	now := carbon.Now(date.MarketTimeZone)
+	s.changeDates = []carbon.Carbon{
+		now.SubYears(1),
+		now.SubMonths(6),
+		now.SubMonths(3),
+		now.SubMonths(1),
+		now.SubDays(14),
+		now.SubDays(7),
+	}
 
 	go func(s *Stream) {
 		for {
@@ -115,12 +129,21 @@ func NewSnapshotStream(
 						PreviousClose:    previousClose,
 					}
 
+					changes := cmap.New[SnapshotChange]()
+
+					// previous close
 					diff := numbers.NumberDiff(snapshot.PreviousClose, snapshot.LatestTrade.Price)
 
-					snapshot.Change = diff.Change
-					snapshot.ChangePercent = diff.ChangePercent
-					snapshot.ChangeAbs = diff.AbsoluteChange
-					snapshot.ChangeSign = diff.Sign
+					changes.Set(
+						"Since Previous", SnapshotChange{
+							Change:        diff.Change,
+							ChangePercent: diff.ChangePercent,
+							ChangeAbs:     diff.AbsoluteChange,
+							ChangeSign:    diff.Sign,
+						},
+					)
+
+					snapshot.Changes = changes.Items()
 
 					data.Set(symbol, snapshot)
 				}

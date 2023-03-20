@@ -3,6 +3,7 @@ package snapshots
 import (
 	md "github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/golang-module/carbon/v2"
+	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/helpers/date"
 	"github.com/phoobynet/market-deck-server/helpers/numbers"
@@ -51,11 +52,18 @@ func (r *Repository) GetMulti(symbols []string) (map[string]Snapshot, error) {
 		}
 
 		diff := numbers.NumberDiff(s.PreviousClose, s.LatestTrade.Price)
+		changes := cmap.New[SnapshotChange]()
 
-		s.Change = diff.Change
-		s.ChangePercent = diff.ChangePercent
-		s.ChangeSign = diff.Sign
-		s.ChangeAbs = diff.AbsoluteChange
+		changes.Set(
+			"Since Previous", SnapshotChange{
+				Change:        diff.Change,
+				ChangePercent: diff.ChangePercent,
+				ChangeSign:    diff.Sign,
+				ChangeAbs:     diff.AbsoluteChange,
+			},
+		)
+
+		s.Changes = changes.Items()
 
 		result[symbol] = s
 	}
