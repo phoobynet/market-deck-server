@@ -12,7 +12,7 @@ const name = computed(() => cleanAssetName(asset?.value?.n))
 
 <template>
   <div
-    class="text-xs opacity-60 truncate"
+    class="text-xs truncate font-semibold"
   >{{ name }}
   </div>
 </template>

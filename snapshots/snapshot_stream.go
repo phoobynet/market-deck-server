@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/go-co-op/gocron"
-	"github.com/golang-module/carbon/v2"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/helpers/numbers"
@@ -28,6 +27,7 @@ type Stream struct {
 	snapshotsRepository *Repository
 	publishTicker       *time.Ticker
 	publishInterval     time.Duration
+	refreshTicker       *time.Ticker
 	snapshotScheduler   *gocron.Scheduler
 	barRepository       *bars.Repository
 
@@ -70,32 +70,13 @@ func NewSnapshotStream(
 		dailyBars:           make(map[string]bars.Bar, 0),
 		prevDailyBars:       make(map[string]bars.Bar, 0),
 		previousCloses:      make(map[string]float64, 0),
+		refreshTicker:       time.NewTicker(1 * time.Second),
 	}
 
 	s.barStream = bars.NewBarStream(ctx, sc, s.barChan)
 	s.tradeStream = trades.NewTradeStream(ctx, sc, s.tradeChan)
 	s.quoteStream = quotes.NewQuoteStream(ctx, sc, s.quoteChan)
 	s.snapshotScheduler = gocron.NewScheduler(time.UTC)
-
-	snapshotRefreshStartAt := carbon.
-		Now().
-		StartOfMinute().
-		AddMinutes(1).
-		ToStdTime()
-
-	_, err := s.snapshotScheduler.
-		Every(1).
-		Minute().
-		StartAt(snapshotRefreshStartAt).
-		Do(
-			func() {
-				s.refreshSnapshot(s.symbols)
-			},
-		)
-
-	if err != nil {
-		logrus.Errorf("failed to create snapshot job: %v", err)
-	}
 
 	go func(s *Stream) {
 		for {
@@ -132,7 +113,7 @@ func NewSnapshotStream(
 						PreviousClose:    s.previousCloses[symbol],
 					}
 
-					diff := numbers.NumberDiff(snapshot.LatestTrade.Price, snapshot.PreviousClose)
+					diff := numbers.NumberDiff(snapshot.PreviousClose, snapshot.LatestTrade.Price)
 
 					snapshot.Change = diff.Change
 					snapshot.ChangePercent = diff.ChangePercent
@@ -142,14 +123,25 @@ func NewSnapshotStream(
 					data[symbol] = snapshot
 				}
 
+				s.mu.RUnlock()
+
 				messageBus <- messages.Message{
 					Event: messages.Snapshots,
 					Data:  data,
 				}
-				s.mu.RUnlock()
+			case <-s.refreshTicker.C:
+				sec := time.Now().Second()
+
+				if sec == 0 {
+					logrus.Info("refreshing snapshots")
+					s.mu.Lock()
+					s.refreshSnapshot(s.symbols)
+					s.mu.Unlock()
+				}
 			case <-ctx.Done():
 				s.snapshotScheduler.Stop()
 				s.publishTicker.Stop()
+				s.refreshTicker.Stop()
 			}
 		}
 	}(s)
@@ -202,7 +194,6 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 	s.barStream.Update(symbols)
 	s.quoteStream.Update(symbols)
 	s.tradeStream.Update(symbols)
-
 }
 
 func (s *Stream) refreshSnapshot(symbols []string) {

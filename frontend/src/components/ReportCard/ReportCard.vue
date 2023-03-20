@@ -91,9 +91,9 @@ provide(SignSymbolKey, signSymbol)
     //grid-template-columns: repeat(3, 1fr);
     //grid-template-rows: auto auto auto repeat(2, 1fr);
     grid-template-areas:
-      "name name name"
+      "name name exchange"
       "symbol latest-price latest-price"
-      "exchange change change"
+      ". change change"
       "previous-close previous-close previous-close"
       "daily-volume . .";
 
@@ -127,6 +127,7 @@ provide(SignSymbolKey, signSymbol)
 
     .exchange {
       grid-area: exchange;
+      @apply justify-self-end;
     }
   }
 </style>
