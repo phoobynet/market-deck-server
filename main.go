@@ -49,6 +49,11 @@ func main() {
 		logrus.Fatalf("error connecting to stocks client: %v", err)
 	}
 
+	database.Connect()
+	database.Migrate(&assets.Asset{})
+	database.Migrate(&calendars.CalendarDay{})
+	database.Migrate(&decks.Deck{})
+
 	server.InitSSE()
 
 	mdClient := md.NewClient(md.ClientOpts{})
@@ -67,6 +72,7 @@ func main() {
 		stocksClient,
 		snapshotRepository,
 		deckRepository,
+		calendarDayRepository,
 		barRepository,
 		messageBus,
 	)

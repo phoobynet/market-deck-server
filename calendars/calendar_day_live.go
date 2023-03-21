@@ -14,7 +14,7 @@ import (
 type CalendarDayLive struct {
 	mu                sync.RWMutex
 	alpacaClient      *alpaca.Client
-	repository        *CalendarDayRepository
+	repository        *Repository
 	publishTicker     *time.Ticker
 	calendarDays      []CalendarDay
 	calendarDaysMap   cmap.ConcurrentMap[string, CalendarDay]
@@ -26,7 +26,7 @@ type CalendarDayLive struct {
 func NewCalendarDayLive(
 	ctx context.Context,
 	alpacaClient *alpaca.Client,
-	calendarDayRepository *CalendarDayRepository,
+	calendarDayRepository *Repository,
 	messageBus chan<- messages.Message,
 ) *CalendarDayLive {
 	l := &CalendarDayLive{

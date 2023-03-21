@@ -3,11 +3,10 @@ package snapshots
 import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
-	"github.com/golang-module/carbon/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
+	"github.com/phoobynet/market-deck-server/calendars"
 	"github.com/phoobynet/market-deck-server/decks"
-	"github.com/phoobynet/market-deck-server/helpers/date"
 	"github.com/phoobynet/market-deck-server/helpers/numbers"
 	"github.com/phoobynet/market-deck-server/messages"
 	"github.com/phoobynet/market-deck-server/quotes"
@@ -19,18 +18,19 @@ import (
 )
 
 type Stream struct {
-	deckRepository      *decks.DeckRepository
-	barStream           *bars.Stream
-	quoteStream         *quotes.Stream
-	tradeStream         *trades.Stream
-	barChan             chan map[string]bars.Bar
-	quoteChan           chan map[string]quotes.Quote
-	tradeChan           chan map[string]trades.Trade
-	snapshotsRepository *Repository
-	publishTicker       *time.Ticker
-	publishInterval     time.Duration
-	refreshTicker       *time.Ticker
-	barRepository       *bars.Repository
+	deckRepository        *decks.DeckRepository
+	barStream             *bars.Stream
+	quoteStream           *quotes.Stream
+	tradeStream           *trades.Stream
+	barChan               chan map[string]bars.Bar
+	quoteChan             chan map[string]quotes.Quote
+	tradeChan             chan map[string]trades.Trade
+	snapshotsRepository   *Repository
+	publishTicker         *time.Ticker
+	publishInterval       time.Duration
+	refreshTicker         *time.Ticker
+	barRepository         *bars.Repository
+	calendarDayRepository *calendars.Repository
 
 	mu sync.RWMutex
 
@@ -46,7 +46,7 @@ type Stream struct {
 
 	symbols []string
 
-	changeDates []carbon.Carbon
+	ytdPickDaysAgo []int
 }
 
 func NewSnapshotStream(
@@ -54,42 +54,43 @@ func NewSnapshotStream(
 	sc *stream.StocksClient,
 	snapshotsRepository *Repository,
 	deckRepository *decks.DeckRepository,
+	calendarDayRepository *calendars.Repository,
 	barRepository *bars.Repository,
 	messageBus chan<- messages.Message,
 ) *Stream {
 	s := &Stream{
-		deckRepository:      deckRepository,
-		snapshotsRepository: snapshotsRepository,
-		publishInterval:     1 * time.Second,
-		publishTicker:       time.NewTicker(1 * time.Second),
-		barChan:             make(chan map[string]bars.Bar, 1_000),
-		quoteChan:           make(chan map[string]quotes.Quote, 1_000),
-		tradeChan:           make(chan map[string]trades.Trade, 1_000),
-		intradayBars:        cmap.New[[]bars.Bar](),
-		ytdBars:             cmap.New[[]bars.Bar](),
-		barRepository:       barRepository,
-		symbols:             make([]string, 0),
-		latestBars:          cmap.New[bars.Bar](),
-		latestTrades:        cmap.New[trades.Trade](),
-		latestQuotes:        cmap.New[quotes.Quote](),
-		dailyBars:           cmap.New[bars.Bar](),
-		prevDailyBars:       cmap.New[bars.Bar](),
-		previousCloses:      cmap.New[float64](),
-		refreshTicker:       time.NewTicker(1 * time.Second),
+		deckRepository:        deckRepository,
+		snapshotsRepository:   snapshotsRepository,
+		calendarDayRepository: calendarDayRepository,
+		publishInterval:       1 * time.Second,
+		publishTicker:         time.NewTicker(1 * time.Second),
+		barChan:               make(chan map[string]bars.Bar, 1_000),
+		quoteChan:             make(chan map[string]quotes.Quote, 1_000),
+		tradeChan:             make(chan map[string]trades.Trade, 1_000),
+		intradayBars:          cmap.New[[]bars.Bar](),
+		ytdBars:               cmap.New[[]bars.Bar](),
+		barRepository:         barRepository,
+		symbols:               make([]string, 0),
+		latestBars:            cmap.New[bars.Bar](),
+		latestTrades:          cmap.New[trades.Trade](),
+		latestQuotes:          cmap.New[quotes.Quote](),
+		dailyBars:             cmap.New[bars.Bar](),
+		prevDailyBars:         cmap.New[bars.Bar](),
+		previousCloses:        cmap.New[float64](),
+		refreshTicker:         time.NewTicker(1 * time.Second),
 	}
 
 	s.barStream = bars.NewBarStream(ctx, sc, s.barChan)
 	s.tradeStream = trades.NewTradeStream(ctx, sc, s.tradeChan)
 	s.quoteStream = quotes.NewQuoteStream(ctx, sc, s.quoteChan)
 
-	now := carbon.Now(date.MarketTimeZone)
-	s.changeDates = []carbon.Carbon{
-		now.SubYears(1),
-		now.SubMonths(6),
-		now.SubMonths(3),
-		now.SubMonths(1),
-		now.SubDays(14),
-		now.SubDays(7),
+	s.ytdPickDaysAgo = []int{
+		365,
+		180,
+		90,
+		30,
+		14,
+		7,
 	}
 
 	go func(s *Stream) {
@@ -110,7 +111,9 @@ func NewSnapshotStream(
 			case <-s.publishTicker.C:
 				s.mu.RLock()
 
-				data := cmap.New[Snapshot]()
+				snapshots := cmap.New[Snapshot]()
+
+				today := time.Now().Format("2006-01-02")
 
 				for _, symbol := range s.symbols {
 					latestTrade, _ := s.latestTrades.Get(symbol)
@@ -129,13 +132,22 @@ func NewSnapshotStream(
 						PreviousClose:    previousClose,
 					}
 
+					actualPreviousDailyBar := snapshot.PreviousDailyBar
+
+					if snapshot.DailyBar.Date() < today {
+						actualPreviousDailyBar = snapshot.DailyBar
+					}
+
+					snapshot.ActualPreviousDailyBar = actualPreviousDailyBar
+
 					changes := cmap.New[SnapshotChange]()
 
 					// previous close
 					diff := numbers.NumberDiff(snapshot.PreviousClose, snapshot.LatestTrade.Price)
 
 					changes.Set(
-						"Since Previous", SnapshotChange{
+						snapshot.ActualPreviousDailyBar.Date(), SnapshotChange{
+							Since:         snapshot.ActualPreviousDailyBar.Timestamp,
 							Change:        diff.Change,
 							ChangePercent: diff.ChangePercent,
 							ChangeAbs:     diff.AbsoluteChange,
@@ -143,14 +155,31 @@ func NewSnapshotStream(
 						},
 					)
 
+					if ytdBars, ok := s.ytdBars.Get(symbol); ok {
+						for _, ytdBar := range ytdBars {
+
+							d := numbers.NumberDiff(ytdBar.Close, snapshot.LatestTrade.Price)
+
+							changes.Set(
+								ytdBar.Date(), SnapshotChange{
+									Since:         ytdBar.Timestamp,
+									Change:        d.Change,
+									ChangePercent: d.ChangePercent,
+									ChangeAbs:     d.AbsoluteChange,
+									ChangeSign:    d.Sign,
+								},
+							)
+						}
+					}
+
 					snapshot.Changes = changes.Items()
 
-					data.Set(symbol, snapshot)
+					snapshots.Set(symbol, snapshot)
 				}
 
 				messageBus <- messages.Message{
 					Event: messages.Snapshots,
-					Data:  data.Items(),
+					Data:  snapshots.Items(),
 				}
 				s.mu.RUnlock()
 			case <-s.refreshTicker.C:
@@ -159,7 +188,7 @@ func NewSnapshotStream(
 				if sec == 0 {
 					logrus.Info("refreshing snapshots")
 					s.mu.Lock()
-					s.refreshSnapshot(s.symbols)
+					s.refreshSnapshot(s.symbols, false)
 					s.mu.Unlock()
 				}
 			case <-ctx.Done():
@@ -209,12 +238,12 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 	if len(addedSymbols) > 0 {
 		s.symbols = append(s.symbols, addedSymbols...)
 
-		s.refreshSnapshot(addedSymbols)
+		s.refreshSnapshot(addedSymbols, true)
 
 		// run in the background is fine
 		go s.fillIntradayBars(addedSymbols)
 
-		go s.fillYtdBars(addedSymbols)
+		go s.fillYtdBarsAtIntervals(addedSymbols)
 	}
 
 	s.barStream.Update(symbols)
@@ -222,7 +251,9 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 	s.tradeStream.Update(symbols)
 }
 
-func (s *Stream) refreshSnapshot(symbols []string) {
+// refreshSnapshot refreshes the daily bar, previous daily bar, and previous close.
+// when initializeLatestValues is true, it will also initialize the latest bar, latest quote, and latest trade.
+func (s *Stream) refreshSnapshot(symbols []string, initializeLatestValues bool) {
 	if len(symbols) == 0 {
 		return
 	}
@@ -234,6 +265,11 @@ func (s *Stream) refreshSnapshot(symbols []string) {
 	}
 
 	for _, symbol := range symbols {
+		if initializeLatestValues {
+			s.latestBars.Set(symbol, snapshots[symbol].LatestBar)
+			s.latestQuotes.Set(symbol, snapshots[symbol].LatestQuote)
+			s.latestTrades.Set(symbol, snapshots[symbol].LatestTrade)
+		}
 		s.dailyBars.Set(symbol, snapshots[symbol].DailyBar)
 		s.prevDailyBars.Set(symbol, snapshots[symbol].PreviousDailyBar)
 		s.previousCloses.Set(symbol, snapshots[symbol].PreviousClose)
@@ -256,7 +292,7 @@ func (s *Stream) fillIntradayBars(symbols []string) {
 	}
 }
 
-func (s *Stream) fillYtdBars(symbols []string) {
+func (s *Stream) fillYtdBarsAtIntervals(symbols []string) {
 	if len(symbols) == 0 {
 		return
 	}
@@ -267,35 +303,33 @@ func (s *Stream) fillYtdBars(symbols []string) {
 		logrus.Errorf("failed to get YTD bars: %v", err)
 	}
 
-	// every symbol share the
-	pickIndexes := make([]int, len(s.changeDates))
-	picked := false
+	pickCalendarDays := s.calendarDayRepository.PickByIntervals(s.ytdPickDaysAgo)
 
+	// For YTD bars, select at intervals
 	for symbol, ytdBars := range ytdMulti {
-		if !picked {
-			for _, d := range s.changeDates {
-				_, barIndex, found := lo.FindIndexOf[bars.Bar](ytdBars, func(bar bars.Bar) bool {
-					return bar.Timestamp >= d.TimestampMicro()
-				})
+		pickedBars := make([]bars.Bar, 0)
 
-				if found {
-					pickIndexes = append(pickIndexes, barIndex)
-				}
+		for _, pickCalendarDay := range pickCalendarDays {
+			bar, ok := lo.Find(
+				ytdBars, func(bar bars.Bar) bool {
+					if bar == (bars.Bar{}) {
+						logrus.Panicf("bar is empty for %s on %s", symbol, pickCalendarDay.Date)
+					}
+
+					return bar.Date() == pickCalendarDay.Date
+				},
+			)
+
+			if ok {
+				pickedBars = append(pickedBars, bar)
+			} else {
+				logrus.Errorf("no bar found for %s on %s", symbol, pickCalendarDay.Date)
 			}
-
-			picked = true
 		}
 
-		pickedBars := make([]bars.Bar, len(pickIndexes))
-
-		// pick the bars
-		for _, index := range pickIndexes {
-			pickedBars = append(pickedBars, ytdBars[index])
+		if len(pickedBars) > 0 {
+			s.ytdBars.Set(symbol, pickedBars)
 		}
-
-		s.ytdBars.Set(symbol, pickedBars)
-
-		logrus.Infof("%v", pickedBars)
 	}
 }
 

@@ -65,7 +65,10 @@ provide(SignSymbolKey, signSymbol)
     <ReportCardSymbol />
     <ReportCardName class="name" />
     <ReportCardLatestPrice class="latest-price" />
-    <ReportCardChange class="change" />
+    <div class="change">
+      TODO
+    </div>
+<!--    <ReportCardChange class="change" />-->
     <div class="previous-close"></div>
     <ReportCardDailyVolume class="daily-volume" />
     <ReportCardExchange class="exchange" />

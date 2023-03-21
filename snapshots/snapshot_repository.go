@@ -5,7 +5,6 @@ import (
 	"github.com/golang-module/carbon/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
-	"github.com/phoobynet/market-deck-server/helpers/date"
 	"github.com/phoobynet/market-deck-server/helpers/numbers"
 	"github.com/phoobynet/market-deck-server/quotes"
 	"github.com/phoobynet/market-deck-server/trades"
@@ -30,25 +29,28 @@ func (r *Repository) GetMulti(symbols []string) (map[string]Snapshot, error) {
 
 	result := make(map[string]Snapshot)
 
-	now := carbon.Now(date.MarketTimeZone).Format("Y-m-d")
+	now := carbon.Now(carbon.NewYork).Format("Y-m-d")
 
 	for symbol, mdSnapshot := range mdSnapshots {
 		dailyBar := bars.FromMarketDataBar(symbol, *mdSnapshot.DailyBar)
 		previousDailyBar := bars.FromMarketDataBar(symbol, *mdSnapshot.PrevDailyBar)
 
-		previousClose := previousDailyBar.Close
+		actualPreviousDailyBar := previousDailyBar
 
 		if dailyBar.Date() < now {
-			previousClose = dailyBar.Close
+			actualPreviousDailyBar = dailyBar
 		}
 
+		previousClose := actualPreviousDailyBar.Close
+
 		s := Snapshot{
-			LatestBar:        bars.FromMarketDataBar(symbol, *mdSnapshot.MinuteBar),
-			LatestQuote:      quotes.FromMarketDataQuote(symbol, *mdSnapshot.LatestQuote),
-			LatestTrade:      trades.FromMarketDataTrade(symbol, *mdSnapshot.LatestTrade),
-			DailyBar:         dailyBar,
-			PreviousDailyBar: previousDailyBar,
-			PreviousClose:    previousClose,
+			LatestBar:              bars.FromMarketDataBar(symbol, *mdSnapshot.MinuteBar),
+			LatestQuote:            quotes.FromMarketDataQuote(symbol, *mdSnapshot.LatestQuote),
+			LatestTrade:            trades.FromMarketDataTrade(symbol, *mdSnapshot.LatestTrade),
+			DailyBar:               dailyBar,
+			PreviousDailyBar:       previousDailyBar,
+			ActualPreviousDailyBar: actualPreviousDailyBar,
+			PreviousClose:          previousClose,
 		}
 
 		diff := numbers.NumberDiff(s.PreviousClose, s.LatestTrade.Price)

@@ -1,9 +1,6 @@
 package database
 
 import (
-	"github.com/phoobynet/market-deck-server/assets"
-	"github.com/phoobynet/market-deck-server/calendars"
-	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -17,8 +14,7 @@ func checkErr(err error) {
 	}
 }
 
-func init() {
-	// TODO: Provide some sort of configuration option for determining the location of local data,
+func Connect() {
 	// e.g. a path option
 	_db, err := gorm.Open(
 		sqlite.Open("market-deck.db"), &gorm.Config{
@@ -28,11 +24,11 @@ func init() {
 
 	checkErr(err)
 
-	checkErr(_db.AutoMigrate(&assets.Asset{}))
-	checkErr(_db.AutoMigrate(&calendars.CalendarDay{}))
-	checkErr(_db.AutoMigrate(&decks.Deck{}))
-
 	db = _db
+}
+
+func Migrate(model interface{}) {
+	checkErr(db.AutoMigrate(model))
 }
 
 func GetDB() *gorm.DB {

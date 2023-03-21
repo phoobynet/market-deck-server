@@ -1,6 +1,10 @@
 package bars
 
-import "time"
+import (
+	"fmt"
+	jsoniter "github.com/json-iterator/go"
+	"time"
+)
 
 type Bar struct {
 	Symbol     string  `json:"S"`
@@ -16,4 +20,16 @@ type Bar struct {
 // Date taken from the Timestamp field (ms) and formatted as YYYY-MM-DD
 func (b *Bar) Date() string {
 	return time.UnixMilli(b.Timestamp).Format("2006-01-02")
+}
+
+func (b *Bar) String() string {
+	j := jsoniter.ConfigCompatibleWithStandardLibrary
+
+	data, err := j.Marshal(b)
+
+	if err != nil {
+		return fmt.Sprintf("Error marshalling bar: %s", err)
+	}
+
+	return fmt.Sprintf("%s", data)
 }
