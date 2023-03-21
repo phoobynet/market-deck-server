@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	cmap "github.com/orcaman/concurrent-map/v2"
+	"github.com/phoobynet/market-deck-server/clients"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -21,9 +22,9 @@ type Stream struct {
 	publishTicker *time.Ticker
 }
 
-func NewQuoteStream(ctx context.Context, sc *stream.StocksClient, publishChan chan<- map[string]Quote) *Stream {
+func NewQuoteStream(ctx context.Context, publishChan chan<- map[string]Quote) *Stream {
 	s := &Stream{
-		sc:            sc,
+		sc:            clients.GetStocksClient(),
 		symbols:       make([]string, 0),
 		streamChan:    make(chan stream.Quote, 1_000),
 		quoteChan:     make(chan Quote, 1_000),

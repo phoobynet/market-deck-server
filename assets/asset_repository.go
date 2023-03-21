@@ -4,11 +4,18 @@ import (
 	"fmt"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
 	cmap "github.com/orcaman/concurrent-map/v2"
+	"github.com/phoobynet/market-deck-server/clients"
+	"github.com/phoobynet/market-deck-server/database"
 	"github.com/schollz/closestmatch"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"strings"
+	"sync"
 )
+
+var assetRepositoryOnce sync.Once
+
+var assetRepository *AssetRepository
 
 type AssetRepository struct {
 	alpacaClient *alpaca.Client
@@ -19,15 +26,19 @@ type AssetRepository struct {
 	cm           *closestmatch.ClosestMatch
 }
 
-func NewAssetRepository(db *gorm.DB, alpacaClient *alpaca.Client) *AssetRepository {
-	a := &AssetRepository{
-		alpacaClient: alpacaClient,
-		assets:       cmap.New[Asset](),
-		populated:    false,
-		db:           db,
-	}
+func GetRepository() *AssetRepository {
+	assetRepositoryOnce.Do(
+		func() {
+			assetRepository = &AssetRepository{
+				alpacaClient: clients.GetAlpacaClient(),
+				assets:       cmap.New[Asset](),
+				populated:    false,
+				db:           database.GetDB(),
+			}
+		},
+	)
 
-	return a
+	return assetRepository
 }
 
 func (a *AssetRepository) Get(symbol string) Asset {

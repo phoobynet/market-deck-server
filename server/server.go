@@ -27,9 +27,10 @@ func NewServer(
 	config *Config,
 	dist embed.FS,
 	snapshotStream *snapshots.Stream,
-	deckRepository *decks.DeckRepository,
-	assetRepository *assets.AssetRepository,
 ) *Server {
+	assetRepository := assets.GetRepository()
+	deckRepository := decks.GetRepository()
+
 	webServer := &Server{
 		config,
 		http.NewServeMux(),

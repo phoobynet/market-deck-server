@@ -4,11 +4,7 @@ import (
 	"context"
 	"embed"
 	"flag"
-	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
-	md "github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
-	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/phoobynet/market-deck-server/assets"
-	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/calendars"
 	"github.com/phoobynet/market-deck-server/database"
 	"github.com/phoobynet/market-deck-server/decks"
@@ -27,59 +23,31 @@ var (
 	messageBus = make(chan messages.Message, 100_00)
 )
 
+func fatal(err error) {
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
 func main() {
 	signal.Notify(quitChan, os.Interrupt)
 	logrus.SetFormatter(&logrus.TextFormatter{})
 
-	var configPath string
+	config := loadConfig()
 
-	flag.StringVar(&configPath, "config", "config.toml", "Path to config file")
-
-	config, err := server.LoadConfig(configPath)
-
-	if err != nil {
-		logrus.Fatalf("Error loading config: %s", err)
-	}
-
-	stocksClient := stream.NewStocksClient(md.SIP)
-
-	err = stocksClient.Connect(context.TODO())
-
-	if err != nil {
-		logrus.Fatalf("error connecting to stocks client: %v", err)
-	}
-
-	database.Connect()
-	database.Migrate(&assets.Asset{})
-	database.Migrate(&calendars.CalendarDay{})
-	database.Migrate(&decks.Deck{})
-
-	server.InitSSE()
-
-	mdClient := md.NewClient(md.ClientOpts{})
-	alpacaClient := alpaca.NewClient(alpaca.ClientOpts{})
-
-	assetRepository := assets.NewAssetRepository(database.GetDB(), alpacaClient)
-	calendarDayRepository := calendars.NewCalendarDayRepository(database.GetDB(), alpacaClient)
-	deckRepository := decks.NewDeckRepository(database.GetDB())
-	snapshotRepository := snapshots.NewSnapshotRepository(mdClient)
-	barRepository := bars.NewBarRepository(mdClient)
+	migrateDatabase()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	snapshotStream := snapshots.NewSnapshotStream(
 		ctx,
-		stocksClient,
-		snapshotRepository,
-		deckRepository,
-		calendarDayRepository,
-		barRepository,
 		messageBus,
 	)
 
-	calendars.NewCalendarDayLive(ctx, alpacaClient, calendarDayRepository, messageBus)
+	calendars.NewCalendarDayLive(ctx, messageBus)
 
-	webServer := server.NewServer(config, dist, snapshotStream, deckRepository, assetRepository)
+	server.InitSSE()
+	webServer := server.NewServer(config, dist, snapshotStream)
 
 	go func() {
 		for {
@@ -96,4 +64,23 @@ func main() {
 
 	logrus.Infof("Listening on %d...", config.ServerPort)
 	webServer.Listen()
+}
+
+func migrateDatabase() {
+	db := database.GetDB()
+	fatal(db.AutoMigrate(&assets.Asset{}))
+	fatal(db.AutoMigrate(&calendars.CalendarDay{}))
+	fatal(db.AutoMigrate(&decks.Deck{}))
+}
+
+func loadConfig() *server.Config {
+	var configPath string
+
+	flag.StringVar(&configPath, "config", "config.toml", "Path to config file")
+
+	config, err := server.LoadConfig(configPath)
+
+	fatal(err)
+
+	return config
 }

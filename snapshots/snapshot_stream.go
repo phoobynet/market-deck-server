@@ -2,7 +2,6 @@ package snapshots
 
 import (
 	"context"
-	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
 	"github.com/golang-module/carbon/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
@@ -52,17 +51,13 @@ type Stream struct {
 
 func NewSnapshotStream(
 	ctx context.Context,
-	sc *stream.StocksClient,
-	snapshotsRepository *Repository,
-	deckRepository *decks.DeckRepository,
-	calendarDayRepository *calendars.Repository,
-	barRepository *bars.Repository,
 	messageBus chan<- messages.Message,
 ) *Stream {
 	s := &Stream{
-		deckRepository:        deckRepository,
-		snapshotsRepository:   snapshotsRepository,
-		calendarDayRepository: calendarDayRepository,
+		deckRepository:        decks.GetRepository(),
+		snapshotsRepository:   GetRepository(),
+		calendarDayRepository: calendars.GetRepository(),
+		barRepository:         bars.GetRepository(),
 		publishInterval:       1 * time.Second,
 		publishTicker:         time.NewTicker(1 * time.Second),
 		barChan:               make(chan map[string]bars.Bar, 1_000),
@@ -70,7 +65,6 @@ func NewSnapshotStream(
 		tradeChan:             make(chan map[string]trades.Trade, 1_000),
 		intradayBars:          cmap.New[[]bars.Bar](),
 		ytdBars:               cmap.New[[]bars.Bar](),
-		barRepository:         barRepository,
 		symbols:               make([]string, 0),
 		latestBars:            cmap.New[bars.Bar](),
 		latestTrades:          cmap.New[trades.Trade](),
@@ -81,9 +75,9 @@ func NewSnapshotStream(
 		refreshTicker:         time.NewTicker(1 * time.Second),
 	}
 
-	s.barStream = bars.NewBarStream(ctx, sc, s.barChan)
-	s.tradeStream = trades.NewTradeStream(ctx, sc, s.tradeChan)
-	s.quoteStream = quotes.NewQuoteStream(ctx, sc, s.quoteChan)
+	s.barStream = bars.NewBarStream(ctx, s.barChan)
+	s.tradeStream = trades.NewTradeStream(ctx, s.tradeChan)
+	s.quoteStream = quotes.NewQuoteStream(ctx, s.quoteChan)
 
 	s.ytdPickDaysAgo = []int{
 		365,
@@ -345,6 +339,7 @@ func (s *Stream) GetIntradayBars() map[string][]bars.Bar {
 
 	return s.intradayBars.Items()
 }
+
 func (s *Stream) GetYtdBars() map[string][]bars.Bar {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

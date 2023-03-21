@@ -3,6 +3,8 @@ package bars
 import (
 	md "github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/golang-module/carbon/v2"
+	"github.com/phoobynet/market-deck-server/clients"
+	"sync"
 	"time"
 )
 
@@ -10,8 +12,20 @@ type Repository struct {
 	mdClient *md.Client
 }
 
-func NewBarRepository(mdClient *md.Client) *Repository {
-	return &Repository{mdClient}
+var barRepositoryOnce sync.Once
+
+var barRepository *Repository
+
+func GetRepository() *Repository {
+	barRepositoryOnce.Do(
+		func() {
+			barRepository = &Repository{
+				mdClient: clients.GetMarketDataClient(),
+			}
+		},
+	)
+
+	return barRepository
 }
 
 func (c *Repository) GetLatestMulti(symbols []string) (map[string]Bar, error) {
@@ -40,7 +54,7 @@ func (c *Repository) GetHistoricMulti(symbols []string, timeframe md.TimeFrame, 
 	rawBars, err := c.mdClient.GetMultiBars(
 		symbols, md.GetBarsRequest{
 			TimeFrame:  timeframe,
-			Adjustment: "split",
+			Adjustment: md.Split,
 			Start:      start,
 			End:        end,
 			Feed:       md.SIP,

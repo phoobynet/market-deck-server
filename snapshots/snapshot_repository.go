@@ -5,19 +5,31 @@ import (
 	"github.com/golang-module/carbon/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
+	"github.com/phoobynet/market-deck-server/clients"
 	"github.com/phoobynet/market-deck-server/helpers/numbers"
 	"github.com/phoobynet/market-deck-server/quotes"
 	"github.com/phoobynet/market-deck-server/trades"
+	"sync"
 )
+
+var snapshotRepositoryOnce sync.Once
+
+var snapshotRepository *Repository
 
 type Repository struct {
 	mdClient *md.Client
 }
 
-func NewSnapshotRepository(mdClient *md.Client) *Repository {
-	return &Repository{
-		mdClient: mdClient,
-	}
+func GetRepository() *Repository {
+	snapshotRepositoryOnce.Do(
+		func() {
+			snapshotRepository = &Repository{
+				mdClient: clients.GetMarketDataClient(),
+			}
+		},
+	)
+
+	return snapshotRepository
 }
 
 func (r *Repository) GetMulti(symbols []string) (map[string]Snapshot, error) {

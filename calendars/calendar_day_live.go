@@ -5,6 +5,7 @@ import (
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
 	"github.com/golang-module/carbon/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
+	"github.com/phoobynet/market-deck-server/clients"
 	"github.com/phoobynet/market-deck-server/helpers/date"
 	"github.com/phoobynet/market-deck-server/messages"
 	"sync"
@@ -25,17 +26,15 @@ type CalendarDayLive struct {
 
 func NewCalendarDayLive(
 	ctx context.Context,
-	alpacaClient *alpaca.Client,
-	calendarDayRepository *Repository,
 	messageBus chan<- messages.Message,
 ) *CalendarDayLive {
 	l := &CalendarDayLive{
-		alpacaClient:    alpacaClient,
+		alpacaClient:    clients.GetAlpacaClient(),
 		publishTicker:   time.NewTicker(1 * time.Second),
 		nyTimezone:      date.GetNewYorkZone(),
 		calendarDays:    make([]CalendarDay, 0),
 		calendarDaysMap: cmap.New[CalendarDay](),
-		repository:      calendarDayRepository,
+		repository:      GetRepository(),
 	}
 
 	l.populateMarketDates()

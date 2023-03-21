@@ -3,11 +3,18 @@ package calendars
 import (
 	"github.com/alpacahq/alpaca-trade-api-go/v3/alpaca"
 	cmap "github.com/orcaman/concurrent-map/v2"
+	"github.com/phoobynet/market-deck-server/clients"
+	"github.com/phoobynet/market-deck-server/database"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"sync"
 	"time"
 )
+
+var calendarRepositoryOnce sync.Once
+
+var calendarRepository *Repository
 
 type Repository struct {
 	alpacaClient    *alpaca.Client
@@ -18,15 +25,21 @@ type Repository struct {
 	db              *gorm.DB
 }
 
-func NewCalendarDayRepository(db *gorm.DB, alpacaClient *alpaca.Client) *Repository {
-	return &Repository{
-		alpacaClient:    alpacaClient,
-		populated:       false,
-		db:              db,
-		calendarDays:    make([]CalendarDay, 0),
-		calendarDaysMap: cmap.New[CalendarDay](),
-		calendarDates:   make([]string, 0),
-	}
+func GetRepository() *Repository {
+	calendarRepositoryOnce.Do(
+		func() {
+			calendarRepository = &Repository{
+				alpacaClient:    clients.GetAlpacaClient(),
+				populated:       false,
+				db:              database.GetDB(),
+				calendarDays:    make([]CalendarDay, 0),
+				calendarDaysMap: cmap.New[CalendarDay](),
+				calendarDates:   make([]string, 0),
+			}
+		},
+	)
+
+	return calendarRepository
 }
 
 // populate - ensure the calendar days are loaded into memory, if not, load them from the database

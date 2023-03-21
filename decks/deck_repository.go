@@ -1,29 +1,40 @@
 package decks
 
 import (
+	"github.com/phoobynet/market-deck-server/database"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"strings"
+	"sync"
 )
+
+var deckRepositoryOnce sync.Once
+
+var deckRepository *DeckRepository
 
 type DeckRepository struct {
 	db *gorm.DB
 }
 
-func NewDeckRepository(db *gorm.DB) *DeckRepository {
-	d := &DeckRepository{
-		db: db,
-	}
+func GetRepository() *DeckRepository {
 
-	if d.Count() == 0 {
-		_, err := d.Create("default", []string{})
+	deckRepositoryOnce.Do(
+		func() {
+			d := &DeckRepository{
+				db: database.GetDB(),
+			}
 
-		if err != nil {
-			logrus.Fatalf("error creating default deck: %v", err)
-		}
-	}
+			if d.Count() == 0 {
+				_, err := d.Create("default", []string{})
 
-	return d
+				if err != nil {
+					logrus.Fatalf("error creating default deck: %v", err)
+				}
+			}
+		},
+	)
+
+	return deckRepository
 }
 
 func (d *DeckRepository) Create(name string, symbols []string) (*Deck, error) {
