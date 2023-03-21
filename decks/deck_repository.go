@@ -17,15 +17,14 @@ type DeckRepository struct {
 }
 
 func GetRepository() *DeckRepository {
-
 	deckRepositoryOnce.Do(
 		func() {
-			d := &DeckRepository{
+			deckRepository = &DeckRepository{
 				db: database.GetDB(),
 			}
 
-			if d.Count() == 0 {
-				_, err := d.Create("default", []string{})
+			if deckRepository.Count() == 0 {
+				_, err := deckRepository.Create("default", []string{})
 
 				if err != nil {
 					logrus.Fatalf("error creating default deck: %v", err)

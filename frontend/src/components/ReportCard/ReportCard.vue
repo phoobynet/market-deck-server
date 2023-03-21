@@ -14,7 +14,6 @@ import ReportCardLatestPrice from '@/components/ReportCard/ReportCardLatestPrice
 import ReportCardDailyVolume from '@/components/ReportCard/ReportCardDailyVolume.vue'
 import ReportCardExchange from '@/components/ReportCard/ReportCardExchange.vue'
 import { useCalendarDayUpdateStore } from '@/stores'
-import ReportCardChanges from '@/components/ReportCard/ReportCardChanges.vue'
 
 const props = defineProps<{
   symbol: string
@@ -61,15 +60,8 @@ provide(ChangeSincePreviousKey, changeSincePrevious)
     <ReportCardSymbol />
     <ReportCardName class="name" />
     <ReportCardLatestPrice class="latest-price" />
-    <div class="change">
-      TODO
-    </div>
-    <div class="previous-close"></div>
     <ReportCardDailyVolume class="daily-volume" />
     <ReportCardExchange class="exchange" />
-    <div class="day-range">
-      Day Range
-    </div>
   </div>
 </template>
 

@@ -2,45 +2,46 @@
   <div class="w-full">
     <div class="tags" :class="{ 'has-focus': hasFocus }">
       <transition-group
-        enter-active-class="animate__animated animate__fadeIn animate__faster"
-        leave-active-class="animate__animated animate__fadeOut animate__faster"
+          enter-active-class="animate__animated animate__fadeIn animate__faster"
+          leave-active-class="animate__animated animate__fadeOut animate__faster"
       >
         <tag
-          v-for="tag in tags"
-          :key="tag"
-          :deletable="true"
-          :tag="tag"
-          @deleted="onRemoveTag"
+            v-for="tag in tags"
+            :key="tag"
+            :deletable="true"
+            :tag="tag"
+            @deleted="onRemoveTag"
         />
       </transition-group>
       <div class="relative flex-grow">
         <input
-          ref="inputRef"
-          v-model="tagInputValue"
-          @keydown.esc="onEscape"
-          @keydown.enter="onProcessTags"
-          @keydown.delete="onDelete"
-          @keydown.tab="onProcessTags"
-          @keydown.down="onDown"
-          @keydown.up="onUp"
-          @blur="onProcessTags"
-          @input="onInput"
-          class="tags-input"
-          :class="{ 'has-focus': hasFocus }"
-          :placeholder="placeholder"
-          v-bind="attrs"
-          @focusin="hasFocus = true"
-          @focusout="hasFocus = false"
+            ref="inputRef"
+            v-model="tagInputValue"
+            @keydown.esc="onEscape"
+            @keydown.enter="onProcessTags"
+            @keydown.delete="onDelete"
+            @keydown.tab="onProcessTags"
+            @keydown.down="onDown"
+            @keydown.up="onUp"
+            @blur="onProcessTags"
+            @input="onInput"
+            class="tags-input"
+            :class="{ 'has-focus': hasFocus }"
+            :placeholder="placeholder"
+            v-bind="attrs"
+            @focusin="hasFocus = true"
+            @focusout="hasFocus = false"
         />
         <div
-          class="absolute flex flex-col space-y-1 text-xs overflow-auto bg-slate-800 border border-accent rounded"
-          :style="{ left: optionsPosition }"
-          v-if="tagInputValue.trim().length > 0"
+            class="absolute flex flex-col space-y-1 text-xs overflow-auto bg-slate-800 border border-accent rounded"
+            :style="{ left: optionsPosition }"
+            v-if="tagInputValue.trim().length > 0"
         >
           <div
-            v-for="(option, i) in optionsMatchingFilter"
-            class="px-2"
-            :class="{
+              v-for="(option, i) in optionsMatchingFilter"
+              class="px-2"
+              :key="i"
+              :class="{
               'bg-accent text-black font-bold': i === selectedPosition,
             }"
           >
@@ -49,9 +50,9 @@
         </div>
       </div>
       <div
-        class="opacity-50 pr-2 cursor-pointer"
-        @click.prevent="clearAll"
-        v-if="false"
+          class="opacity-50 pr-2 cursor-pointer"
+          @click.prevent="clearAll"
+          v-if="false"
       >
         <icon>
           <close></close>
@@ -59,8 +60,8 @@
       </div>
     </div>
     <div
-      ref="measureTextDiv"
-      style="
+        ref="measureTextDiv"
+        style="
         position: absolute;
         visibility: hidden;
         height: auto;
@@ -82,13 +83,20 @@ import { Close } from '@vicons/ionicons5'
 import Fuse from 'fuse.js'
 import { debouncedWatch } from '@vueuse/core'
 
+interface TagInputOption {
+  tag: string
+  label: string
+}
+
 let fuse: Fuse<TagInputOption>
 
 const props = defineProps({
   tags: {
     type: Array as PropType<string[]>,
     required: false,
-    default: [],
+    default: function () {
+      return []
+    },
   },
   placeholder: {
     type: String as PropType<string>,
@@ -100,11 +108,6 @@ const props = defineProps({
     required: true,
   },
 })
-
-interface TagInputOption {
-  tag: string
-  label: string
-}
 
 const inputRef = ref<HTMLInputElement>()
 const measureTextDiv = ref<HTMLDivElement>()
@@ -137,21 +140,22 @@ const search = (value: string): TagInputOption[] => {
 }
 
 debouncedWatch(
-  tagInputValue,
-  (newValue) => {
-    optionsMatchingFilter.value = search(newValue)
-  },
-  {
-    debounce: 500,
-  },
+    tagInputValue,
+    (newValue) => {
+      optionsMatchingFilter.value = search(newValue)
+    },
+    {
+      debounce: 500,
+    },
 )
 
-const onInput = (event: InputEvent) => {
-  optionsPosition.value = (measureTextDiv.value?.clientWidth ?? 0) + 'px'
+const onInput = () => {
+  optionsPosition.value = `${(measureTextDiv.value?.clientWidth ?? 0)}px`
 }
 
 const onRemoveTag = (tag: string) => {
   const t = props.tags.filter((x) => x !== tag)
+
   emit('change', t)
 }
 
@@ -169,11 +173,11 @@ const onProcessTags = () => {
     selectedValue.value = ''
   } else {
     addedTags = tagInputValue.value
-      .trim()
-      .split(' ')
-      .map((v) => (v || '').trim().toUpperCase())
-      .filter((v) => !!v)
-      .filter((v) => props.options.has(v))
+        .trim()
+        .split(' ')
+        .map((v) => (v || '').trim().toUpperCase())
+        .filter((v) => !!v)
+        .filter((v) => props.options.has(v))
   }
 
   if (addedTags.length > 0) {
@@ -191,12 +195,12 @@ watch(optionsMatchingFilter, (newValue) => {
 
 const onDown = () => {
   if (optionsMatchingFilter.value?.length) {
-    let nextPosition = selectedPosition.value + 1
+    const nextPosition = selectedPosition.value + 1
 
     if (nextPosition <= optionsMatchingFilter.value.length - 1) {
       selectedPosition.value = nextPosition
       selectedValue.value =
-        optionsMatchingFilter.value[selectedPosition.value].tag
+          optionsMatchingFilter.value[selectedPosition.value].tag
     }
   } else {
     selectedPosition.value = -1
@@ -206,9 +210,11 @@ const onDown = () => {
 const onUp = () => {
   if (optionsMatchingFilter.value?.length) {
     if (selectedPosition.value > 0) {
+      // eslint-disable-next-line operator-assignment
       selectedPosition.value = selectedPosition.value - 1
+
       selectedValue.value =
-        optionsMatchingFilter.value[selectedPosition.value].tag
+          optionsMatchingFilter.value[selectedPosition.value].tag
     }
   } else {
     selectedPosition.value = -1
@@ -234,17 +240,18 @@ const clearAll = () => {
 onMounted(() => {
   const input = inputRef.value as HTMLInputElement
   const style = window
-    .getComputedStyle(input, null)
-    .getPropertyValue('font-size')
+      .getComputedStyle(input, null)
+      .getPropertyValue('font-size')
   const div = measureTextDiv.value as HTMLDivElement
+
   div.style.fontSize = style
 
   if (props.options) {
     tagInputOptions.value = Array.from(props.options.entries()).map(
-      (entry: string[]) => ({
-        tag: entry[0],
-        label: `${entry[0]} - ${entry[1]}`,
-      }),
+        (entry: string[]) => ({
+          tag: entry[0],
+          label: `${entry[0]} - ${entry[1]}`,
+        }),
     )
     fuse = new Fuse<TagInputOption>(tagInputOptions.value, {
       isCaseSensitive: false,
@@ -263,23 +270,23 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-  .tags {
-    @apply flex flex-row flex-wrap space-x-2 w-full items-center h-10 bg-slate-800 pl-2 border border-slate-900 rounded;
+.tags {
+  @apply flex flex-row flex-wrap space-x-2 w-full items-center h-10 bg-slate-800 pl-2 border border-slate-900 rounded;
 
-    &.hover {
-      @apply border-accent;
-    }
-
-    &.has-focus {
-      @apply border border-accent bg-slate-700;
-    }
+  &.hover {
+    @apply border-accent;
   }
 
-  .tags-input {
-    @apply outline-none pl-0.5 w-full h-10 bg-slate-800 w-full h-full outline-none placeholder-slate-500;
-
-    &.has-focus {
-      @apply bg-slate-700;
-    }
+  &.has-focus {
+    @apply border border-accent bg-slate-700;
   }
+}
+
+.tags-input {
+  @apply outline-none pl-0.5 w-full h-10 bg-slate-800 w-full h-full outline-none placeholder-slate-500;
+
+  &.has-focus {
+    @apply bg-slate-700;
+  }
+}
 </style>

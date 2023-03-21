@@ -14,7 +14,7 @@ import ReportCard from '@/components/ReportCard/ReportCard.vue'
 
 const snapshotsStore = useSnapshotsStore()
 
-const { symbols, snapshots } = storeToRefs(snapshotsStore)
+const { symbols } = storeToRefs(snapshotsStore)
 const assetsStore = useAssetsStore()
 
 const {
@@ -32,6 +32,7 @@ watch(hasAssets, (newValue) => {
     for (const asset of assets.value) {
       options.set(asset.S, asset.n)
     }
+
     loading.value = false
   }
 }, {
