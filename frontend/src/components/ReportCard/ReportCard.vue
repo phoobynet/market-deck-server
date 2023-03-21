@@ -67,7 +67,9 @@ provide(ChangeSincePreviousKey, changeSincePrevious)
     <div class="previous-close"></div>
     <ReportCardDailyVolume class="daily-volume" />
     <ReportCardExchange class="exchange" />
-    <ReportCardChanges class="changes" />
+    <div class="day-range">
+      Day Range
+    </div>
   </div>
 </template>
 
