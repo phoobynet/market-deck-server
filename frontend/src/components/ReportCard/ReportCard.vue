@@ -2,18 +2,22 @@
   lang="ts"
   setup
 >
-import { computed, provide } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { useSnapshotsStore } from '@/stores/useSnapshotsStore'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/useAssetsStore'
 import { Asset, Snapshot, SnapshotChange } from '@/types'
-import { AssetKey, ChangeSincePreviousKey, SnapshotKey } from '@/components/ReportCard/injectionKeys'
+import {
+  AssetKey, ChangeSincePreviousKey, HeightKey, SnapshotKey, WidthKey,
+} from '@/components/ReportCard/injectionKeys'
 import ReportCardSymbol from '@/components/ReportCard/ReportCardSymbol.vue'
 import ReportCardName from '@/components/ReportCard/ReportCardName.vue'
 import ReportCardLatestPrice from '@/components/ReportCard/ReportCardLatestPrice.vue'
 import ReportCardDailyVolume from '@/components/ReportCard/ReportCardDailyVolume.vue'
 import ReportCardExchange from '@/components/ReportCard/ReportCardExchange.vue'
 import { useCalendarDayUpdateStore } from '@/stores'
+import ReportCardDayRange from '@/components/ReportCard/ReportCardDayRange.vue'
+import { useElementSize } from '@vueuse/core'
 
 const props = defineProps<{
   symbol: string
@@ -46,13 +50,27 @@ const asset = computed<Asset | undefined>(() => {
   return assetsStore.getBySymbol(props.symbol)
 })
 
+const reportCard = ref<HTMLDivElement>()
+
+const {
+  height,
+  width,
+} = useElementSize(reportCard)
+
+watch(width,  () => {
+  console.log('width', width.value)
+})
+
 provide(AssetKey, asset)
 provide(SnapshotKey, snapshot)
 provide(ChangeSincePreviousKey, changeSincePrevious)
+provide(WidthKey, width)
+provide(HeightKey, height)
 </script>
 
 <template>
   <div
+    ref="reportCard"
     v-if="symbol && snapshot && asset"
     class="report-card"
     :data-sign="changeSincePrevious?.cs"
@@ -62,6 +80,7 @@ provide(ChangeSincePreviousKey, changeSincePrevious)
     <ReportCardLatestPrice class="latest-price" />
     <ReportCardDailyVolume class="daily-volume" />
     <ReportCardExchange class="exchange" />
+    <ReportCardDayRange class="day-range" />
   </div>
 </template>
 
@@ -85,8 +104,8 @@ provide(ChangeSincePreviousKey, changeSincePrevious)
       "name name exchange"
       "symbol latest-price latest-price"
       "previous-close previous-close previous-close"
-      ". .daily-volume"
-      "changes changes changes";
+      ". . daily-volume"
+      "day-range day-range day-range";
 
     .symbol {
       grid-area: symbol;
@@ -120,6 +139,10 @@ provide(ChangeSincePreviousKey, changeSincePrevious)
     .exchange {
       grid-area: exchange;
       @apply justify-self-end;
+    }
+
+    .day-range {
+      grid-area: day-range;
     }
   }
 </style>
