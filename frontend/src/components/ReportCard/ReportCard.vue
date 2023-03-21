@@ -92,7 +92,7 @@ provide(ChangeSincePreviousKey, changeSincePrevious)
       "symbol latest-price latest-price"
       "previous-close previous-close previous-close"
       ". .daily-volume"
-      ". changes changes";
+      "changes changes changes";
 
     .symbol {
       grid-area: symbol;
