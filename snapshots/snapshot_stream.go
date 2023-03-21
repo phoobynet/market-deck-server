@@ -3,6 +3,7 @@ package snapshots
 import (
 	"context"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
+	"github.com/golang-module/carbon/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/calendars"
@@ -148,6 +149,7 @@ func NewSnapshotStream(
 					changes.Set(
 						snapshot.ActualPreviousDailyBar.Date(), SnapshotChange{
 							Since:         snapshot.ActualPreviousDailyBar.Timestamp,
+							Label:         "Prev Close",
 							Change:        diff.Change,
 							ChangePercent: diff.ChangePercent,
 							ChangeAbs:     diff.AbsoluteChange,
@@ -162,7 +164,11 @@ func NewSnapshotStream(
 
 							changes.Set(
 								ytdBar.Date(), SnapshotChange{
-									Since:         ytdBar.Timestamp,
+									Since: ytdBar.Timestamp,
+									Label: carbon.CreateFromTimestampMilli(
+										ytdBar.Timestamp,
+										carbon.NewYork,
+									).DiffForHumans(),
 									Change:        d.Change,
 									ChangePercent: d.ChangePercent,
 									ChangeAbs:     d.AbsoluteChange,

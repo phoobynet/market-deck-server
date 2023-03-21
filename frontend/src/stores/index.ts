@@ -1,2 +1,2 @@
-export * from './useCalendarDayUpdate'
+export * from './useCalendarDayUpdateStore'
 export * from './useSnapshotsStore'

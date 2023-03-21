@@ -3,9 +3,9 @@
   setup
 >
 import { storeToRefs } from 'pinia'
-import { useCalendarDayUpdate } from '@/stores/useCalendarDayUpdate'
+import { useCalendarDayUpdateStore } from '@/stores/useCalendarDayUpdateStore'
 
-const calendarDayUpdateStore = useCalendarDayUpdate()
+const calendarDayUpdateStore = useCalendarDayUpdateStore()
 
 const {
   condition,

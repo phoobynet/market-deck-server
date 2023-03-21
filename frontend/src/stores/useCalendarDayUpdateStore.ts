@@ -10,7 +10,7 @@ export interface CalendarDayUpdateState {
   calendarDayUpdate: CalendarDayUpdate | undefined
 }
 
-export const useCalendarDayUpdate = defineStore('calendarDayUpdate', ({
+export const useCalendarDayUpdateStore = defineStore('calendarDayUpdate', ({
   state: (): CalendarDayUpdateState => ({
     calendarDayUpdate: undefined,
   }),
@@ -45,6 +45,14 @@ export const useCalendarDayUpdate = defineStore('calendarDayUpdate', ({
       }
 
       return state.calendarDayUpdate.condition
+    },
+
+    previousDate: (state): string => {
+      if (state.calendarDayUpdate === undefined) {
+        return ''
+      }
+
+      return state.calendarDayUpdate?.prev?.date ?? ''
     },
 
     conditionDescription: (state): string => {

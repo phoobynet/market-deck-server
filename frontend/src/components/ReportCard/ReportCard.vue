@@ -6,14 +6,15 @@ import { computed, provide } from 'vue'
 import { useSnapshotsStore } from '@/stores/useSnapshotsStore'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/useAssetsStore'
-import { Asset, Snapshot } from '@/types'
-import { AssetKey, SignKey, SignSymbolKey, SnapshotKey } from '@/components/ReportCard/injectionKeys'
+import { Asset, Snapshot, SnapshotChange } from '@/types'
+import { AssetKey, ChangeSincePreviousKey, SnapshotKey } from '@/components/ReportCard/injectionKeys'
 import ReportCardSymbol from '@/components/ReportCard/ReportCardSymbol.vue'
 import ReportCardName from '@/components/ReportCard/ReportCardName.vue'
 import ReportCardLatestPrice from '@/components/ReportCard/ReportCardLatestPrice.vue'
 import ReportCardDailyVolume from '@/components/ReportCard/ReportCardDailyVolume.vue'
 import ReportCardExchange from '@/components/ReportCard/ReportCardExchange.vue'
-import ReportCardChange from '@/components/ReportCard/ReportCardChange.vue'
+import { useCalendarDayUpdateStore } from '@/stores'
+import ReportCardChanges from '@/components/ReportCard/ReportCardChanges.vue'
 
 const props = defineProps<{
   symbol: string
@@ -21,8 +22,10 @@ const props = defineProps<{
 
 const snapshotsStore = useSnapshotsStore()
 const assetsStore = useAssetsStore()
+const calendarDayUpdateStore = useCalendarDayUpdateStore()
 
 const { snapshots } = storeToRefs(snapshotsStore)
+const { previousDate } = storeToRefs(calendarDayUpdateStore)
 
 const snapshot = computed<Snapshot | undefined>(() => {
   if (!snapshots.value) {
@@ -32,35 +35,28 @@ const snapshot = computed<Snapshot | undefined>(() => {
   return snapshots.value[props.symbol]
 })
 
+const changeSincePrevious = computed<SnapshotChange | undefined>(() => {
+  if (!previousDate.value ?? !snapshot.value) {
+    return undefined
+  }
+
+  return snapshot.value?.changes[previousDate.value]
+})
+
 const asset = computed<Asset | undefined>(() => {
   return assetsStore.getBySymbol(props.symbol)
 })
 
-const sign = computed(() => {
-  return snapshot?.value?.cs ?? 0
-})
-
-const signSymbol = computed(() => {
-  if (!sign.value) {
-    return ''
-  }
-
-  return sign.value > 0
-    ? '+'
-    : '-'
-})
-
 provide(AssetKey, asset)
 provide(SnapshotKey, snapshot)
-provide(SignKey, sign)
-provide(SignSymbolKey, signSymbol)
+provide(ChangeSincePreviousKey, changeSincePrevious)
 </script>
 
 <template>
   <div
     v-if="symbol && snapshot && asset"
     class="report-card"
-    :data-sign="sign"
+    :data-sign="changeSincePrevious?.cs"
   >
     <ReportCardSymbol />
     <ReportCardName class="name" />
@@ -68,10 +64,10 @@ provide(SignSymbolKey, signSymbol)
     <div class="change">
       TODO
     </div>
-<!--    <ReportCardChange class="change" />-->
     <div class="previous-close"></div>
     <ReportCardDailyVolume class="daily-volume" />
     <ReportCardExchange class="exchange" />
+    <ReportCardChanges class="changes" />
   </div>
 </template>
 
@@ -91,14 +87,12 @@ provide(SignSymbolKey, signSymbol)
     }
 
     display: grid;
-    //grid-template-columns: repeat(3, 1fr);
-    //grid-template-rows: auto auto auto repeat(2, 1fr);
     grid-template-areas:
       "name name exchange"
       "symbol latest-price latest-price"
-      ". change change"
       "previous-close previous-close previous-close"
-      ". .daily-volume";
+      ". .daily-volume"
+      ". changes changes";
 
     .symbol {
       grid-area: symbol;
@@ -119,8 +113,8 @@ provide(SignSymbolKey, signSymbol)
       grid-area: previous-close;
     }
 
-    .change {
-      grid-area: change;
+    .changes {
+      grid-area: changes;
       @apply self-start;
     }
 

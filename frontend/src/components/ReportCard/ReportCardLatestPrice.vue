@@ -3,11 +3,11 @@
   setup
 >
 import { computed, inject } from 'vue'
-import { SignKey, SnapshotKey } from '@/components/ReportCard/injectionKeys'
+import { ChangeSincePreviousKey, SnapshotKey } from '@/components/ReportCard/injectionKeys'
 import { formatMoney } from '@/libs/helpers/formatMoney'
 
 const snapshot = inject(SnapshotKey)
-const sign = inject(SignKey)
+const changeSincePrevious = inject(ChangeSincePreviousKey)
 
 const formatted = computed(() => {
   return formatMoney(snapshot?.value?.lt?.p ?? 0)
@@ -17,7 +17,7 @@ const formatted = computed(() => {
 <template>
   <div
     class="latest-price"
-    :data-sign="sign"
+    :data-sign="changeSincePrevious?.cs"
   >
     {{ formatted }}
   </div>

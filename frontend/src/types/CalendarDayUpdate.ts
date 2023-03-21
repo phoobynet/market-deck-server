@@ -4,7 +4,7 @@ import { CurrentMarketCondition } from '@/types/CurrentMarketCondition'
 export interface CalendarDayUpdate {
   condition: CurrentMarketCondition
   at: number
-  previous: CalendarDay
+  prev: CalendarDay
   current: CalendarDay
   next: CalendarDay
 }

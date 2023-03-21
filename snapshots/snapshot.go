@@ -33,6 +33,7 @@ func (s *Snapshot) String() string {
 
 type SnapshotChange struct {
 	Since         int64   `json:"since"`
+	Label         string  `json:"label"`
 	Change        float64 `json:"c"`
 	ChangePercent float64 `json:"cp"`
 	ChangeSign    int8    `json:"cs"`

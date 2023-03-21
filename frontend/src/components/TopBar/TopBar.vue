@@ -3,11 +3,11 @@
   setup
 >
 import Condition from '@/components/CalendarDayCondition.vue'
-import { useCalendarDayUpdate } from '@/stores'
+import { useCalendarDayUpdateStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import Clock from '@/components/TopBar/Clock.vue'
 
-const calendarDayUpdateStore = useCalendarDayUpdate()
+const calendarDayUpdateStore = useCalendarDayUpdateStore()
 
 const {
   timeUnixMs,

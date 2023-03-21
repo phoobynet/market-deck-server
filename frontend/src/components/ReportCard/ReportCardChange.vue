@@ -2,32 +2,41 @@
   lang="ts"
   setup
 >
-import { SignKey, SignSymbolKey, SnapshotKey } from '@/components/ReportCard/injectionKeys'
+import { ChangeSincePreviousKey, SnapshotKey } from '@/components/ReportCard/injectionKeys'
 import { computed, inject } from 'vue'
 import { formatMoneyNoSymbol } from '@/libs/helpers/formatMoney'
-import { formatPercent, formatPercentAbs } from '@/libs/helpers/formatPercent'
+import { formatPercentAbs } from '@/libs/helpers/formatPercent'
 import ReportCardChangeIndicator from '@/components/ReportCard/ReportCardChangeIndicator.vue'
 
 const snapshot = inject(SnapshotKey)
-const sign = inject(SignKey)
-const signSymbol = inject(SignSymbolKey)
+const changeSincePrevious = inject(ChangeSincePreviousKey)
 
 const priceChange = computed(() => {
-  return formatMoneyNoSymbol(snapshot?.value?.ca ?? 0)
+  return formatMoneyNoSymbol(changeSincePrevious?.value?.ca ?? 0)
 })
 
 const percentChange = computed(() => {
-  return formatPercentAbs(snapshot?.value?.cp ?? 0)
+  return formatPercentAbs(changeSincePrevious?.value?.cp ?? 0)
+})
+
+const signSymbol = computed(() => {
+  if (changeSincePrevious?.value?.cs == 1) {
+    return '+'
+  } else if (changeSincePrevious?.value?.cs == -1) {
+    return '-'
+  } else {
+    return ''
+  }
 })
 </script>
 
 <template>
   <div
     class="change"
-    :data-sign="sign"
+    :data-sign="changeSincePrevious?.cs"
   >
     <div>
-      <ReportCardChangeIndicator :sign="sign" />
+      <ReportCardChangeIndicator :sign="changeSincePrevious?.cs" />
     </div>
     <div class="price-change"><span class="tracking-widest">{{ signSymbol }}</span>{{ priceChange }}</div>
     <div class="percent-change">({{ percentChange }})</div>

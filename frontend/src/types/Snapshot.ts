@@ -15,7 +15,12 @@ export interface Snapshot {
   db: Bar
   // previous close
   pc: number
-  // change amount
+  changes: Record<string, SnapshotChange>
+}
+
+export interface SnapshotChange {
+  since: number
+  label: string
   c: number
   // change percent
   cp: number
