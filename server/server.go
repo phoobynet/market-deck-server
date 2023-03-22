@@ -87,9 +87,9 @@ func NewServer(
 
 			if symbols == "" {
 				snapshotStream.UpdateSymbols([]string{})
+			} else {
+				snapshotStream.UpdateSymbols(strings.Split(symbols, ","))
 			}
-
-			snapshotStream.UpdateSymbols(strings.Split(symbols, ","))
 
 			w.WriteHeader(http.StatusOK)
 		},

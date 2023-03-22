@@ -206,10 +206,19 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 	s.publishTicker.Stop()
 	defer s.publishTicker.Reset(s.publishInterval)
 
-	_, err := s.deckRepository.UpdateByName("default", symbols)
+	if len(symbols) == 0 {
+		_, err := s.deckRepository.ClearByName("default")
 
-	if err != nil {
-		logrus.Fatalf("failed to update symbols: %v", err)
+		if err != nil {
+			logrus.Fatalf("failed to clear symbols: %v", err)
+		}
+	} else {
+
+		_, err := s.deckRepository.UpdateByName("default", symbols)
+
+		if err != nil {
+			logrus.Fatalf("failed to update symbols: %v", err)
+		}
 	}
 
 	removedSymbols, addedSymbols := lo.Difference(s.symbols, symbols)
@@ -252,12 +261,6 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 func (s *Stream) refreshSnapshot(symbols []string, initializeLatestValues bool) {
 	if len(symbols) == 0 {
 		return
-	}
-
-	calendarDayUpdate := s.calendarDayLive.Get()
-
-	if calendarDayUpdate.Condition == calendars.PreMarket {
-
 	}
 
 	snapshots, err := s.snapshotsRepository.GetMulti(symbols)

@@ -59,6 +59,18 @@ func (d *DeckRepository) FindByName(name string) (*Deck, error) {
 	return &deck, err
 }
 
+func (d *DeckRepository) ClearByName(name string) (*Deck, error) {
+	var deck Deck
+
+	d.db.Where("name = ?", name).First(&deck)
+
+	deck.Symbols = ""
+
+	err := d.db.Save(&deck).Error
+
+	return &deck, err
+}
+
 func (d *DeckRepository) UpdateByName(name string, symbols []string) (*Deck, error) {
 	var deck Deck
 
