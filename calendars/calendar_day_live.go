@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+var calendarDayLiveOnce sync.Once
+var calendarDayLive *CalendarDayLive
+
 type CalendarDayLive struct {
 	mu                sync.RWMutex
 	alpacaClient      *alpaca.Client
@@ -24,37 +27,41 @@ type CalendarDayLive struct {
 	nyTimezone        carbon.Carbon
 }
 
-func NewCalendarDayLive(
+func GetCalendarDayLive(
 	ctx context.Context,
 	messageBus chan<- messages.Message,
 ) *CalendarDayLive {
-	l := &CalendarDayLive{
-		alpacaClient:    clients.GetAlpacaClient(),
-		publishTicker:   time.NewTicker(1 * time.Second),
-		nyTimezone:      date.GetNewYorkZone(),
-		calendarDays:    make([]CalendarDay, 0),
-		calendarDaysMap: cmap.New[CalendarDay](),
-		repository:      GetRepository(),
-	}
-
-	l.populateMarketDates()
-
-	go func() {
-		for {
-			select {
-			case <-l.publishTicker.C:
-				l.update()
-				messageBus <- messages.Message{
-					Event: messages.CalendarDayUpdate,
-					Data:  l.calendarDayUpdate,
-				}
-			case <-ctx.Done():
-				l.publishTicker.Stop()
+	calendarDayLiveOnce.Do(
+		func() {
+			calendarDayLive = &CalendarDayLive{
+				alpacaClient:    clients.GetAlpacaClient(),
+				publishTicker:   time.NewTicker(1 * time.Second),
+				nyTimezone:      date.GetNewYorkZone(),
+				calendarDays:    make([]CalendarDay, 0),
+				calendarDaysMap: cmap.New[CalendarDay](),
+				repository:      GetRepository(),
 			}
-		}
-	}()
 
-	return l
+			calendarDayLive.populateMarketDates()
+
+			go func() {
+				for {
+					select {
+					case <-calendarDayLive.publishTicker.C:
+						calendarDayLive.update()
+						messageBus <- messages.Message{
+							Event: messages.CalendarDayUpdate,
+							Data:  calendarDayLive.calendarDayUpdate,
+						}
+					case <-ctx.Done():
+						calendarDayLive.publishTicker.Stop()
+					}
+				}
+			}()
+		},
+	)
+
+	return calendarDayLive
 }
 
 func (l *CalendarDayLive) populateMarketDates() {

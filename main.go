@@ -39,12 +39,13 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	calendarDayLive := calendars.GetCalendarDayLive(ctx, messageBus)
+
 	snapshotStream := snapshots.NewSnapshotStream(
 		ctx,
+		calendarDayLive,
 		messageBus,
 	)
-
-	calendars.NewCalendarDayLive(ctx, messageBus)
 
 	server.InitSSE()
 	webServer := server.NewServer(config, dist, snapshotStream)

@@ -8,9 +8,12 @@ import (
 )
 
 type Snapshot struct {
-	LatestBar   bars.Bar     `json:"lb"`
-	LatestTrade trades.Trade `json:"lt"`
-	LatestQuote quotes.Quote `json:"lq"`
+	LatestBar    bars.Bar     `json:"lb"`
+	LatestTrade  trades.Trade `json:"lt"`
+	LatestQuote  quotes.Quote `json:"lq"`
+	IntradayBars []bars.Bar   `json:"ibars"`
+	IntradayHigh float64      `json:"ih"`
+	IntradayLow  float64      `json:"il"`
 	// PreviousDailyBar is the previous day's bar, if the market is open.
 	ActualPreviousDailyBar bars.Bar                  `json:"apdb"`
 	PreviousDailyBar       bars.Bar                  `json:"pdb"`

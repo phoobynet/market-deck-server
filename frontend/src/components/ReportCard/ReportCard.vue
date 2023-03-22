@@ -2,53 +2,35 @@
   lang="ts"
   setup
 >
-import { computed, provide, ref, watch } from 'vue'
-import { useSnapshotsStore } from '@/stores/useSnapshotsStore'
-import { storeToRefs } from 'pinia'
-import { useAssetsStore } from '@/stores/useAssetsStore'
-import { Asset, Snapshot, SnapshotChange } from '@/types'
+import { provide, ref } from 'vue'
 import {
-  AssetKey, ChangeSincePreviousKey, HeightKey, SnapshotKey, WidthKey,
+  AssetKey, ChangeSincePreviousKey, CurrentPriceKey, HeightKey, IntradayHighKey, IntradayLowKey, PercentChangeKey,
+  PriceChangeKey, SignSymbolKey, SnapshotKey, SymbolKey, WidthKey,
 } from '@/components/ReportCard/injectionKeys'
 import ReportCardSymbol from '@/components/ReportCard/ReportCardSymbol.vue'
 import ReportCardName from '@/components/ReportCard/ReportCardName.vue'
-import ReportCardLatestPrice from '@/components/ReportCard/ReportCardLatestPrice.vue'
+import ReportCardCurrentPrice from '@/components/ReportCard/ReportCardCurrentPrice.vue'
 import ReportCardDailyVolume from '@/components/ReportCard/ReportCardDailyVolume.vue'
 import ReportCardExchange from '@/components/ReportCard/ReportCardExchange.vue'
-import { useCalendarDayUpdateStore } from '@/stores'
-import ReportCardDayRange from '@/components/ReportCard/ReportCardDayRange.vue'
+import ReportCardDayRange from '@/components/ReportCard/ReportCardDayRange/ReportCardDayRange.vue'
 import { useElementSize } from '@vueuse/core'
+import { useReportCard } from '@/components/ReportCard/useReportCard'
 
 const props = defineProps<{
   symbol: string
 }>()
 
-const snapshotsStore = useSnapshotsStore()
-const assetsStore = useAssetsStore()
-const calendarDayUpdateStore = useCalendarDayUpdateStore()
-
-const { snapshots } = storeToRefs(snapshotsStore)
-const { previousDate } = storeToRefs(calendarDayUpdateStore)
-
-const snapshot = computed<Snapshot | undefined>(() => {
-  if (!snapshots.value) {
-    return undefined
-  }
-
-  return snapshots.value[props.symbol]
-})
-
-const changeSincePrevious = computed<SnapshotChange | undefined>(() => {
-  if (!previousDate.value ?? !snapshot.value) {
-    return undefined
-  }
-
-  return snapshot.value?.changes[previousDate.value]
-})
-
-const asset = computed<Asset | undefined>(() => {
-  return assetsStore.getBySymbol(props.symbol)
-})
+const {
+  snapshot,
+  changeSincePrevious,
+  asset,
+  intradayHigh,
+  intradayLow,
+  currentPrice,
+  priceChange,
+  percentChange,
+  signSymbol,
+} = useReportCard(props.symbol)
 
 const reportCard = ref<HTMLDivElement>()
 
@@ -57,15 +39,19 @@ const {
   width,
 } = useElementSize(reportCard)
 
-watch(width,  () => {
-  console.log('width', width.value)
-})
-
 provide(AssetKey, asset)
 provide(SnapshotKey, snapshot)
 provide(ChangeSincePreviousKey, changeSincePrevious)
 provide(WidthKey, width)
 provide(HeightKey, height)
+provide(IntradayHighKey, intradayHigh)
+provide(IntradayLowKey, intradayLow)
+provide(CurrentPriceKey, currentPrice)
+provide(SymbolKey, props.symbol)
+provide(PriceChangeKey, priceChange)
+provide(PercentChangeKey, percentChange)
+provide(SymbolKey, props.symbol)
+provide(SignSymbolKey, signSymbol)
 </script>
 
 <template>
@@ -77,10 +63,13 @@ provide(HeightKey, height)
   >
     <ReportCardSymbol />
     <ReportCardName class="name" />
-    <ReportCardLatestPrice class="latest-price" />
+    <ReportCardCurrentPrice class="latest-price" />
     <ReportCardDailyVolume class="daily-volume" />
     <ReportCardExchange class="exchange" />
     <ReportCardDayRange class="day-range" />
+    <pre class="preview text-[11px]">
+      {{ JSON.stringify(snapshot, null, 2) }}
+    </pre>
   </div>
 </template>
 
@@ -92,11 +81,11 @@ provide(HeightKey, height)
     @apply border px-2 py-1 rounded-md border-slate-600 transition-all duration-300 ease-in-out;
 
     &[data-sign="1"] {
-      @apply border-up;
+      @apply border-up bg-gradient-to-t from-[#00BFA63C] to-transparent;
     }
 
     &[data-sign="-1"] {
-      @apply border-down;
+      @apply border-down bg-gradient-to-t from-[#EB6B6B33] to-transparent;;
     }
 
     display: grid;
@@ -105,7 +94,8 @@ provide(HeightKey, height)
       "symbol latest-price latest-price"
       "previous-close previous-close previous-close"
       ". . daily-volume"
-      "day-range day-range day-range";
+      "day-range day-range day-range"
+      "preview preview preview";
 
     .symbol {
       grid-area: symbol;
@@ -143,6 +133,11 @@ provide(HeightKey, height)
 
     .day-range {
       grid-area: day-range;
+    }
+
+    .preview {
+      grid-area: preview;
+      display: none;
     }
   }
 </style>

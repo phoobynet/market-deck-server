@@ -2,7 +2,6 @@ package snapshots
 
 import (
 	"context"
-	"github.com/golang-module/carbon/v2"
 	cmap "github.com/orcaman/concurrent-map/v2"
 	"github.com/phoobynet/market-deck-server/bars"
 	"github.com/phoobynet/market-deck-server/calendars"
@@ -46,17 +45,20 @@ type Stream struct {
 
 	symbols []string
 
-	ytdPickDaysAgo []int
+	ytdPickDaysAgo  []int
+	calendarDayLive *calendars.CalendarDayLive
 }
 
 func NewSnapshotStream(
 	ctx context.Context,
+	calendarDayLive *calendars.CalendarDayLive,
 	messageBus chan<- messages.Message,
 ) *Stream {
 	s := &Stream{
 		deckRepository:        decks.GetRepository(),
 		snapshotsRepository:   GetRepository(),
 		calendarDayRepository: calendars.GetRepository(),
+		calendarDayLive:       calendarDayLive,
 		barRepository:         bars.GetRepository(),
 		publishInterval:       1 * time.Second,
 		publishTicker:         time.NewTicker(1 * time.Second),
@@ -117,6 +119,20 @@ func NewSnapshotStream(
 					dailyBar, _ := s.dailyBars.Get(symbol)
 					prevDailyBar, _ := s.prevDailyBars.Get(symbol)
 					previousClose, _ := s.previousCloses.Get(symbol)
+					intradayBars, _ := s.intradayBars.Get(symbol)
+
+					var high float64
+					low := 999_999_999.00
+
+					for _, bar := range intradayBars {
+						if bar.High > high {
+							high = bar.High
+						}
+
+						if bar.Low < low && bar.Low > 0 {
+							low = bar.Low
+						}
+					}
 
 					snapshot := Snapshot{
 						LatestBar:        latestBar,
@@ -125,6 +141,9 @@ func NewSnapshotStream(
 						DailyBar:         dailyBar,
 						PreviousDailyBar: prevDailyBar,
 						PreviousClose:    previousClose,
+						IntradayBars:     intradayBars,
+						IntradayLow:      low,
+						IntradayHigh:     high,
 					}
 
 					actualPreviousDailyBar := snapshot.PreviousDailyBar
@@ -150,27 +169,6 @@ func NewSnapshotStream(
 							ChangeSign:    diff.Sign,
 						},
 					)
-
-					if ytdBars, ok := s.ytdBars.Get(symbol); ok {
-						for _, ytdBar := range ytdBars {
-
-							d := numbers.NumberDiff(ytdBar.Close, snapshot.LatestTrade.Price)
-
-							changes.Set(
-								ytdBar.Date(), SnapshotChange{
-									Since: ytdBar.Timestamp,
-									Label: carbon.CreateFromTimestampMilli(
-										ytdBar.Timestamp,
-										carbon.NewYork,
-									).DiffForHumans(),
-									Change:        d.Change,
-									ChangePercent: d.ChangePercent,
-									ChangeAbs:     d.AbsoluteChange,
-									ChangeSign:    d.Sign,
-								},
-							)
-						}
-					}
 
 					snapshot.Changes = changes.Items()
 
@@ -240,9 +238,7 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 
 		s.refreshSnapshot(addedSymbols, true)
 
-		// run in the background is fine
 		go s.fillIntradayBars(addedSymbols)
-
 		go s.fillYtdBarsAtIntervals(addedSymbols)
 	}
 
@@ -252,10 +248,16 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 }
 
 // refreshSnapshot refreshes the daily bar, previous daily bar, and previous close.
-// when initializeLatestValues is true, it will also initialize the latest bar, latest quote, and latest trade.
+// when initializeLatestValues is true, it will also initialize the latest bar, quote, and trade.
 func (s *Stream) refreshSnapshot(symbols []string, initializeLatestValues bool) {
 	if len(symbols) == 0 {
 		return
+	}
+
+	calendarDayUpdate := s.calendarDayLive.Get()
+
+	if calendarDayUpdate.Condition == calendars.PreMarket {
+
 	}
 
 	snapshots, err := s.snapshotsRepository.GetMulti(symbols)

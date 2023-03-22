@@ -1,12 +1,9 @@
-const numberFormat = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
+import numeral from 'numeral'
 
 export const formatMoney = (amount?: number): string => {
-  return numberFormat.format(amount ?? 0)
+  return numeral(amount).format('$0,0.00')
 }
 
 export const formatMoneyNoSymbol = (amount?: number): string => {
-  return numberFormat.format(amount ?? 0).replace('$', '')
+  return numeral(amount).format('0,0.00')
 }

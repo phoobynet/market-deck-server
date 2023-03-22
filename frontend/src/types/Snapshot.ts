@@ -16,6 +16,12 @@ export interface Snapshot {
   // previous close
   pc: number
   changes: Record<string, SnapshotChange>
+  ibars: Bar[]
+  // intraday high
+  ih: number
+
+  // intraday low
+  il: number
 }
 
 export interface SnapshotChange {
