@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import { CalendarDayUpdate, CurrentMarketCondition } from '@/types'
-import { format, utcToZonedTime } from 'date-fns-tz'
+import { formatInTimeZone } from 'date-fns-tz'
 
-const TIME_FORMAT = 'E do LLL HH:mm:ss'
-const USER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone
+
 const marketTimeZone = 'America/New_York'
 
 export interface CalendarDayUpdateState {
@@ -24,20 +23,12 @@ export const useCalendarDayUpdateStore = defineStore('calendarDayUpdate', ({
       return state.calendarDayUpdate.at
     },
     marketTimeZone: (): string => marketTimeZone,
-    localTimeZone: (): string => USER_TIMEZONE,
     marketTimeFormatted: (state): string => {
       if (state.calendarDayUpdate === undefined) {
         return ''
       }
 
-      return format(utcToZonedTime(new Date(state.calendarDayUpdate.at), marketTimeZone), TIME_FORMAT)
-    },
-    localTimeFormatted: (state): string => {
-      if (state.calendarDayUpdate === undefined) {
-        return ''
-      }
-
-      return format(utcToZonedTime(new Date(state.calendarDayUpdate.at), USER_TIMEZONE), TIME_FORMAT)
+      return formatInTimeZone(new Date(state.calendarDayUpdate.at), marketTimeZone, 'eee eo MMM HH:mm:ss zzz')
     },
     condition: (state): CurrentMarketCondition => {
       if (state.calendarDayUpdate === undefined) {
@@ -71,7 +62,7 @@ export const useCalendarDayUpdateStore = defineStore('calendarDayUpdate', ({
         case CurrentMarketCondition.pre_market:
           return 'Pre-market'
         case CurrentMarketCondition.post_market:
-          return 'Post-market'
+          return 'After hours'
         case CurrentMarketCondition.closed_opening_later:
           return 'Opening later'
         case CurrentMarketCondition.closed_for_the_day:

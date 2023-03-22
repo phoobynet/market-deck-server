@@ -66,7 +66,7 @@ provide(SignSymbolKey, signSymbol)
     <ReportCardCurrentPrice class="latest-price" />
     <ReportCardDailyVolume class="daily-volume" />
     <ReportCardExchange class="exchange" />
-    <ReportCardDayRange class="day-range" />
+<!--    <ReportCardDayRange class="day-range" />-->
     <pre class="preview text-[11px]">
       {{ JSON.stringify(snapshot, null, 2) }}
     </pre>

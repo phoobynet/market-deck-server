@@ -86,7 +86,7 @@ func NewServer(
 			symbols := r.URL.Query().Get("symbols")
 
 			if symbols == "" {
-				return
+				snapshotStream.UpdateSymbols([]string{})
 			}
 
 			snapshotStream.UpdateSymbols(strings.Split(symbols, ","))

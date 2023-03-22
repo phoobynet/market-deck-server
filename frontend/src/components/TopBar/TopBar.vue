@@ -2,35 +2,18 @@
   lang="ts"
   setup
 >
-import Condition from '@/components/CalendarDayCondition.vue'
 import { useCalendarDayUpdateStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import Clock from '@/components/TopBar/Clock.vue'
 
 const calendarDayUpdateStore = useCalendarDayUpdateStore()
 
-const {
-  timeUnixMs,
-  marketTimeZone,
-  localTimeZone,
-} = storeToRefs(calendarDayUpdateStore)
-
+const { marketTimeFormatted, conditionDescription } = storeToRefs(calendarDayUpdateStore)
 </script>
+
 <template>
   <div class="top-bar">
-    <Condition />
-    <div class="flex gap-2 items-center">
-      <Clock
-        :time-unix-ms="timeUnixMs"
-        :tz="marketTimeZone"
-        label="market"
-      />
-      <Clock
-        :time-unix-ms="timeUnixMs"
-        :tz="localTimeZone"
-        label="local"
-      />
-    </div>
+    <div class="condition">{{ conditionDescription }}</div>
+    <div class="market-time">{{ marketTimeFormatted }}</div>
   </div>
 </template>
 
@@ -39,6 +22,14 @@ const {
   scoped
 >
   .top-bar {
-    @apply flex justify-between items-center justify-between px-4 bg-slate-900 h-10;
+    @apply flex justify-between items-center justify-between md:px-4 px-1 bg-slate-900 h-6 md:h-10 bg-black;
+
+    .condition {
+      @apply uppercase text-xxs font-bold tracking-widest;
+    }
+
+    .market-time {
+      @apply text-xxs tabular-nums;
+    }
   }
 </style>

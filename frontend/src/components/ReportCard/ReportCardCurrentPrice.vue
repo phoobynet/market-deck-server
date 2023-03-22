@@ -29,6 +29,9 @@ const priceChangeRef = ref<HTMLDivElement>()
     class="current-price"
     :data-sign="signSymbol"
   >
+    <div class="formatted">
+      {{ formatted }}
+    </div>
     <div class="change">
       <div class="indicator">
         <ReportCardChangeIndicator :sign-symbol="signSymbol" />
@@ -43,9 +46,6 @@ const priceChangeRef = ref<HTMLDivElement>()
         ({{ percentChange }})
       </div>
     </div>
-    <div>
-      {{ formatted }}
-    </div>
   </div>
 </template>
 
@@ -54,7 +54,11 @@ const priceChangeRef = ref<HTMLDivElement>()
   scoped
 >
   .current-price {
-    @apply tabular-nums text-2xl font-semibold flex gap-2 items-center justify-end transition-all;
+    @apply tabular-nums font-semibold flex gap-2 flex-col items-center justify-end transition-all;
+
+    .formatted {
+      @apply text-lg sm:text-xl md:text-2xl lg:text-3xl;
+    }
 
     &[data-sign="+"] {
       @apply text-up;

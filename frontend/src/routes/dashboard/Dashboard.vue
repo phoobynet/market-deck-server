@@ -10,7 +10,7 @@ import Tags from '@/components/Tags.vue'
 import { debouncedWatch } from '@vueuse/core'
 import { updateSymbols } from '@/libs/updateSymbols'
 import { getSymbols } from '@/libs/getSymbols'
-import ReportCard from '@/components/ReportCard/ReportCard.vue'
+import Card from '@/routes/dashboard/components/Card.vue'
 
 const snapshotsStore = useSnapshotsStore()
 
@@ -40,6 +40,7 @@ watch(hasAssets, (newValue) => {
 })
 
 debouncedWatch(tags, async (newValue) => {
+  console.log('debouncedWatch', newValue)
   await updateSymbols(newValue)
 }, {
   immediate: true,
@@ -49,6 +50,10 @@ debouncedWatch(tags, async (newValue) => {
 onMounted(async () => {
   tags.value = await getSymbols()
 })
+
+const removeTag = (tag: string) => {
+  tags.value = tags.value.filter((t) => t !== tag)
+}
 </script>
 
 <template>
@@ -67,12 +72,15 @@ onMounted(async () => {
         enter-active-class="animate__animated animate__fadeIn animate__faster"
         leave-active-class="animate__animated animate__fadeOut animate__faster"
       >
-        <ReportCard
+        <Card
           v-for="symbol of symbols"
           :key="symbol"
           :symbol="symbol"
+          @close="removeTag"
         />
+
       </transition-group>
+        <pre>{{symbols}}</pre>
     </main>
   </div>
 </template>
