@@ -1,7 +1,6 @@
-import { defineStore } from 'pinia'
-import { CalendarDayUpdate, CurrentMarketCondition } from '@/types'
+import { type CalendarDayUpdate, CurrentMarketCondition } from '@/types'
 import { formatInTimeZone } from 'date-fns-tz'
-
+import { defineStore } from 'pinia'
 
 const marketTimeZone = 'America/New_York'
 
@@ -9,7 +8,7 @@ export interface CalendarDayUpdateState {
   calendarDayUpdate: CalendarDayUpdate | undefined
 }
 
-export const useCalendarDayUpdateStore = defineStore('calendarDayUpdate', ({
+export const useCalendarDayUpdateStore = defineStore('calendarDayUpdate', {
   state: (): CalendarDayUpdateState => ({
     calendarDayUpdate: undefined,
   }),
@@ -28,7 +27,11 @@ export const useCalendarDayUpdateStore = defineStore('calendarDayUpdate', ({
         return ''
       }
 
-      return formatInTimeZone(new Date(state.calendarDayUpdate.at), marketTimeZone, 'eee eo MMM HH:mm:ss zzz')
+      return formatInTimeZone(
+        new Date(state.calendarDayUpdate.at),
+        marketTimeZone,
+        'eee eo MMM HH:mm:ss zzz',
+      )
     },
     condition: (state): CurrentMarketCondition => {
       if (state.calendarDayUpdate === undefined) {
@@ -47,7 +50,8 @@ export const useCalendarDayUpdateStore = defineStore('calendarDayUpdate', ({
     },
 
     conditionDescription: (state): string => {
-      let c
+      let c = ''
+
       if (state.calendarDayUpdate === undefined) {
         c = CurrentMarketCondition.unknown
       } else {
@@ -72,4 +76,4 @@ export const useCalendarDayUpdateStore = defineStore('calendarDayUpdate', ({
       }
     },
   },
-}))
+})

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { Snapshots } from '@/types'
+import type { Snapshots } from '@/types'
 
 export interface SnapshotsState {
   snapshots: Snapshots
