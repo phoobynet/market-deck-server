@@ -166,7 +166,7 @@ func NewSnapshotStream(
 							Change:        diff.Change,
 							ChangePercent: diff.ChangePercent,
 							ChangeAbs:     diff.AbsoluteChange,
-							ChangeSign:    diff.Sign,
+							ChangeSign:    diff.Multiplier,
 						},
 					)
 
@@ -210,14 +210,14 @@ func (s *Stream) UpdateSymbols(symbols []string) {
 		_, err := s.deckRepository.ClearByName("default")
 
 		if err != nil {
-			logrus.Fatalf("failed to clear symbols: %v", err)
+			logrus.Panicf("failed to clear symbols: %v", err)
 		}
 	} else {
 
 		_, err := s.deckRepository.UpdateByName("default", symbols)
 
 		if err != nil {
-			logrus.Fatalf("failed to update symbols: %v", err)
+			logrus.Panicf("failed to update symbols: %v", err)
 		}
 	}
 

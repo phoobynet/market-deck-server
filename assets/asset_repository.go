@@ -15,9 +15,9 @@ import (
 
 var assetRepositoryOnce sync.Once
 
-var assetRepository *AssetRepository
+var assetRepository *Repository
 
-type AssetRepository struct {
+type Repository struct {
 	alpacaClient *alpaca.Client
 	assets       cmap.ConcurrentMap[string, Asset]
 	populated    bool
@@ -26,10 +26,10 @@ type AssetRepository struct {
 	cm           *closestmatch.ClosestMatch
 }
 
-func GetRepository() *AssetRepository {
+func GetRepository() *Repository {
 	assetRepositoryOnce.Do(
 		func() {
-			assetRepository = &AssetRepository{
+			assetRepository = &Repository{
 				alpacaClient: clients.GetAlpacaClient(),
 				assets:       cmap.New[Asset](),
 				populated:    false,
@@ -41,17 +41,17 @@ func GetRepository() *AssetRepository {
 	return assetRepository
 }
 
-func (a *AssetRepository) Get(symbol string) Asset {
+func (a *Repository) Get(symbol string) *Asset {
 	a.populate()
 
-	var asset Asset
+	if asset, ok := a.assets.Get(symbol); ok {
+		return &asset
+	}
 
-	a.db.Where("symbol = ?", symbol).First(&asset)
-
-	return asset
+	return nil
 }
 
-func (a *AssetRepository) GetMulti(symbols []string) map[string]Asset {
+func (a *Repository) GetMulti(symbols []string) map[string]Asset {
 	a.populate()
 
 	var assets map[string]Asset
@@ -61,7 +61,7 @@ func (a *AssetRepository) GetMulti(symbols []string) map[string]Asset {
 	return assets
 }
 
-func (a *AssetRepository) GetAll() []Asset {
+func (a *Repository) GetAll() []Asset {
 	a.populate()
 	var assets []Asset
 
@@ -70,7 +70,7 @@ func (a *AssetRepository) GetAll() []Asset {
 	return assets
 }
 
-func (a *AssetRepository) GetByClass(assetClass alpaca.AssetClass) []Asset {
+func (a *Repository) GetByClass(assetClass alpaca.AssetClass) []Asset {
 	a.populate()
 
 	var assets []Asset
@@ -80,7 +80,7 @@ func (a *AssetRepository) GetByClass(assetClass alpaca.AssetClass) []Asset {
 	return assets
 }
 
-func (a *AssetRepository) Search(searchPattern string) []Asset {
+func (a *Repository) Search(searchPattern string) []Asset {
 	a.populate()
 	limit := 200
 	assets := make([]Asset, 0)
@@ -118,7 +118,7 @@ func (a *AssetRepository) Search(searchPattern string) []Asset {
 	return assets
 }
 
-func (a *AssetRepository) populate() {
+func (a *Repository) populate() {
 	if a.populated {
 		return
 	}

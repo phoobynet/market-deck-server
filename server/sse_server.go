@@ -21,6 +21,7 @@ func InitSSE() {
 		sseServer.AutoReplay = false
 		sseServer.CreateStream(messages.CalendarDayUpdate)
 		sseServer.CreateStream(messages.Snapshots)
+		sseServer.CreateStream(messages.SnapshotsLite)
 		sseServer.CreateStream(messages.Messages)
 		sseServer.CreateStream(messages.Errors)
 	}

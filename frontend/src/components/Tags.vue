@@ -33,7 +33,7 @@
             @focusout="hasFocus = false"
         />
         <div
-            class="absolute flex flex-col space-y-1 text-xs overflow-auto bg-slate-800 border border-accent rounded"
+            class="absolute flex flex-col space-y-1 text-xs overflow-auto bg-slate-800 border border-accent rounded z-[999]"
             :style="{ left: optionsPosition }"
             v-if="tagInputValue.trim().length > 0"
         >
@@ -266,12 +266,16 @@ onMounted(() => {
       includeScore: true,
     })
   }
+
+  input.focus({
+    preventScroll: false,
+  })
 })
 </script>
 
 <style lang="scss" scoped>
 .tags {
-  @apply flex flex-row flex-wrap space-x-2 w-full items-center h-10 bg-slate-800 pl-2 border border-slate-900 rounded;
+  @apply flex flex-row flex-wrap space-x-2 w-full items-center bg-slate-800 pl-2 border border-slate-900 rounded;
 
   &.hover {
     @apply border-accent;

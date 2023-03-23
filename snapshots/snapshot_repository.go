@@ -72,7 +72,7 @@ func (r *Repository) GetMulti(symbols []string) (map[string]Snapshot, error) {
 			"Since Previous", SnapshotChange{
 				Change:        diff.Change,
 				ChangePercent: diff.ChangePercent,
-				ChangeSign:    diff.Sign,
+				ChangeSign:    diff.Multiplier,
 				ChangeAbs:     diff.AbsoluteChange,
 			},
 		)

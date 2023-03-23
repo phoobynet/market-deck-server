@@ -26,7 +26,7 @@ type Server struct {
 func NewServer(
 	config *Config,
 	dist embed.FS,
-	snapshotStream *snapshots.Stream,
+	snapshotLiteStream *snapshots.SnapshotLiteStream,
 ) *Server {
 	assetRepository := assets.GetRepository()
 	deckRepository := decks.GetRepository()
@@ -86,9 +86,9 @@ func NewServer(
 			symbols := r.URL.Query().Get("symbols")
 
 			if symbols == "" {
-				snapshotStream.UpdateSymbols([]string{})
+				snapshotLiteStream.UpdateSymbols([]string{})
 			} else {
-				snapshotStream.UpdateSymbols(strings.Split(symbols, ","))
+				snapshotLiteStream.UpdateSymbols(strings.Split(symbols, ","))
 			}
 
 			w.WriteHeader(http.StatusOK)
@@ -215,22 +215,6 @@ func NewServer(
 			}
 
 			_ = writeJSON(w, http.StatusOK, update)
-		},
-	)
-
-	router.GET(
-		"/api/bars/intraday", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-			bars := snapshotStream.GetIntradayBars()
-
-			_ = writeJSON(w, http.StatusOK, bars)
-		},
-	)
-
-	router.GET(
-		"/api/bars/ytd", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-			bars := snapshotStream.GetYtdBars()
-
-			_ = writeJSON(w, http.StatusOK, bars)
 		},
 	)
 

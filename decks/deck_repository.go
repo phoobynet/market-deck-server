@@ -27,7 +27,7 @@ func GetRepository() *DeckRepository {
 				_, err := deckRepository.Create("default", []string{})
 
 				if err != nil {
-					logrus.Fatalf("error creating default deck: %v", err)
+					logrus.Panicf("error creating default deck: %v", err)
 				}
 			}
 		},

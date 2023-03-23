@@ -99,3 +99,15 @@ func (s *Stream) Update(symbols []string) {
 
 	s.unpublished = true
 }
+
+// GetTradeFor returns the latest trade for the given symbol.
+func (s *Stream) GetTradeFor(symbol string) *Trade {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if trade, ok := s.trades.Get(symbol); ok {
+		return &trade
+	}
+
+	return nil
+}

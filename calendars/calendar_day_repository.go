@@ -170,7 +170,7 @@ func (r *Repository) PickByIntervals(daysAgo []int) []CalendarDay {
 		if ok {
 			pickedCalendarDays = append(pickedCalendarDays, calendarDay)
 		} else {
-			logrus.Fatalf("could not find calendar day for date %s", pickDate)
+			logrus.Panicf("could not find calendar day for date %s", pickDate)
 		}
 	}
 
