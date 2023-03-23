@@ -1,56 +1,29 @@
 package snapshots
 
 import (
-	jsoniter "github.com/json-iterator/go"
 	"github.com/phoobynet/market-deck-server/bars"
-	"github.com/phoobynet/market-deck-server/quotes"
-	"github.com/phoobynet/market-deck-server/trades"
+	"github.com/phoobynet/market-deck-server/helpers/numbers"
 )
 
 type Snapshot struct {
-	LatestBar    bars.Bar     `json:"lb"`
-	LatestTrade  trades.Trade `json:"lt"`
-	LatestQuote  quotes.Quote `json:"lq"`
-	IntradayBars []bars.Bar   `json:"ibars"`
-	IntradayHigh float64      `json:"ih"`
-	IntradayLow  float64      `json:"il"`
-	// PreviousDailyBar is the previous day's bar, if the market is open.
-	ActualPreviousDailyBar bars.Bar                  `json:"apdb"`
-	PreviousDailyBar       bars.Bar                  `json:"pdb"`
-	DailyBar               bars.Bar                  `json:"db"`
-	PreviousClose          float64                   `json:"pc"`
-	Changes                map[string]SnapshotChange `json:"changes"`
+	Class         string                   `json:"class"`
+	Symbol        string                   `json:"symbol"`
+	Name          string                   `json:"name"`
+	Exchange      string                   `json:"exchange"`
+	Price         float64                  `json:"price"`
+	PrevClose     float64                  `json:"prevClose"`
+	PrevCloseDate string                   `json:"prevCloseDate"`
+	DailyHigh     float64                  `json:"dailyHigh"`
+	DailyLow      float64                  `json:"dailyLow"`
+	DailyVolume   float64                  `json:"dailyVolume"`
+	Change        numbers.NumberDiffResult `json:"change"`
+	Volumes       []SnapshotVolume         `json:"volumes"`
+	MonthlyBars   []bars.Bar               `json:"monthlyBars"`
+	YtdBars       []bars.Bar               `json:"ytdBars"`
+	YtdChange     numbers.NumberDiffResult `json:"ytdChange"`
 }
 
-func (s *Snapshot) String() string {
-	j := jsoniter.ConfigCompatibleWithStandardLibrary
-
-	data, err := j.Marshal(s)
-
-	if err != nil {
-		return ""
-	}
-
-	return string(data)
-}
-
-type SnapshotChange struct {
-	Since         int64   `json:"since"`
-	Label         string  `json:"label"`
-	Change        float64 `json:"c"`
-	ChangePercent float64 `json:"cp"`
-	ChangeSign    int8    `json:"cs"`
-	ChangeAbs     float64 `json:"ca"`
-}
-
-func (s *SnapshotChange) String() string {
-	j := jsoniter.ConfigCompatibleWithStandardLibrary
-
-	data, err := j.Marshal(s)
-
-	if err != nil {
-		return ""
-	}
-
-	return string(data)
+type SnapshotVolume struct {
+	Date   string  `json:"date"`
+	Volume float64 `json:"vol"`
 }

@@ -26,7 +26,7 @@ type Server struct {
 func NewServer(
 	config *Config,
 	dist embed.FS,
-	snapshotLiteStream *snapshots.SnapshotLiteStream,
+	snapshotLiteStream *snapshots.SnapshotStream,
 ) *Server {
 	assetRepository := assets.GetRepository()
 	deckRepository := decks.GetRepository()
