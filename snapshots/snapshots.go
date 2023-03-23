@@ -51,13 +51,13 @@ func (s *Snapshots) Update(symbols []string) {
 
 	if len(addedSymbols) > 0 {
 		s.symbols = append(s.symbols, addedSymbols...)
-		s.loadBaseSnapshots(addedSymbols) // l
+		s.populateBaseSnapshots(addedSymbols) // l
 		s.populateVolumes()
 		s.populateDailyStats()
 	}
 }
 
-func (s *Snapshots) loadBaseSnapshots(symbols []string) {
+func (s *Snapshots) populateBaseSnapshots(symbols []string) {
 	snapshots, err := s.mdClient.GetSnapshots(symbols, md.GetSnapshotRequest{})
 
 	if err != nil {
@@ -89,6 +89,7 @@ func (s *Snapshots) loadBaseSnapshots(symbols []string) {
 func (s *Snapshots) populateVolumes() {
 	startOfDay := carbon.NewCarbon().SetTimezone(carbon.NewYork).StartOfDay()
 
+	// TODO: Just use mdClient directly
 	historicBars, err := s.barRepo.GetHistoricMulti(
 		s.snapshots.Keys(),
 		md.OneDay,
@@ -120,17 +121,13 @@ func (s *Snapshots) populateVolumes() {
 	)
 }
 
-// populateDailyStates - populates the daily high, low and volume for each snapshot
+// populateDailyStats - corrects the daily high, low, and volume for the current day if in pre-market
 func (s *Snapshots) populateDailyStats() {
 	calendarDayUpdate := s.calendarDayLive.Get()
 
 	if calendarDayUpdate.Condition != calendars.PreMarket {
 		return
 	}
-
-	var dailyHigh float64
-	var dailyLow float64
-	var dailyVolume float64
 
 	start, _ := time.Parse("2006-01-02", calendarDayUpdate.PreviousMarketDate.Date)
 
@@ -148,25 +145,31 @@ func (s *Snapshots) populateDailyStats() {
 		logrus.Panicf("failed to get daily bars: %v", err)
 	}
 
-	if calendarDayUpdate.Condition == calendars.PreMarket {
-		if intradayBars, ok := multiBars[]; ok {
-			highs := make([]float64, 0)
-			lows := make([]float64, 0)
-			volume := 0.0
+	var dailyHigh float64
+	var dailyLow float64
+	var dailyVolume float64
 
-			for _, bar := range intradayBars {
-				highs = append(highs, bar.High)
-				lows = append(lows, bar.Low)
-				volume += bar.Volume
+	s.snapshots.IterCb(
+		func(symbol string, snapshot *Snapshot) {
+			if intradayBars, ok := multiBars[symbol]; ok {
+				highs := make([]float64, 0)
+				lows := make([]float64, 0)
+				volume := 0.0
+
+				for _, bar := range intradayBars {
+					highs = append(highs, bar.High)
+					lows = append(lows, bar.Low)
+					volume += float64(bar.Volume)
+				}
+
+				dailyHigh = lo.Max(highs)
+				dailyLow = lo.Min(lows)
+				dailyVolume = volume
+
+				snapshot.DailyHigh = dailyHigh
+				snapshot.DailyLow = dailyLow
+				snapshot.DailyVolume = dailyVolume
 			}
-
-			dailyHigh = lo.Max(highs)
-			dailyLow = lo.Min(lows)
-			dailyVolume = volume
-		}
-	} else {
-		dailyHigh = snapshot.DailyBar.High
-		dailyLow = snapshot.DailyBar.Low
-		dailyVolume = snapshot.DailyBar.Volume
-	}
+		},
+	)
 }
