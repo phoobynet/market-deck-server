@@ -19,6 +19,7 @@ type SnapshotLite struct {
 	Change        numbers.NumberDiffResult `json:"change"`
 	Volumes       []SnapshotLiteVolume     `json:"volumes"`
 	MonthlyBars   []bars.Bar               `json:"monthlyBars"`
+	YtdBars       []bars.Bar               `json:"ytdBars"`
 	YtdChange     numbers.NumberDiffResult `json:"ytdChange"`
 }
 

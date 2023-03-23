@@ -87,6 +87,7 @@ func NewSnapshotLiteStream(
 							Class:         snapshotLite.Class,
 							Volumes:       snapshotLite.Volumes,
 							MonthlyBars:   snapshotLite.MonthlyBars,
+							YtdBars:       snapshotLite.YtdBars,
 							YtdChange:     snapshotLite.YtdChange,
 						}
 
@@ -119,7 +120,11 @@ func NewSnapshotLiteStream(
 								Class:         snapshotLite.Class,
 								Volumes:       snapshotLite.Volumes,
 								MonthlyBars:   snapshotLite.MonthlyBars,
-								YtdChange:     snapshotLite.YtdChange,
+								YtdBars:       snapshotLite.YtdBars,
+								YtdChange: numbers.NumberDiff(
+									snapshotLite.YtdBars[0].Close,
+									latestTrade.Price,
+								),
 							}
 
 							s.snapshotsLite.Set(symbol, newSnapshotLite)
@@ -206,6 +211,8 @@ func (s *SnapshotLiteStream) addSymbols(addedSymbols []string) {
 		logrus.Panicf("failed to get year to date bars: %v", err)
 	}
 
+	logrus.Infof("last month of bars: %v", yearToDateBars)
+
 	calendarDayUpdate := s.calendarDayLive.Get()
 
 	intradayBarsBySymbol := cmap.New[[]bars.Bar]()
@@ -286,6 +293,7 @@ func (s *SnapshotLiteStream) addSymbols(addedSymbols []string) {
 				Class:         asset.Class,
 				Volumes:       volumes,
 				MonthlyBars:   yearToDateBars[symbol],
+				YtdBars:       yearToDateBars[symbol],
 				YtdChange:     numbers.NumberDiff(yearToDateBars[symbol][0].Close, snapshot.LatestTrade.Price),
 			},
 		)
@@ -366,6 +374,7 @@ func (s *SnapshotLiteStream) refreshSnapshots() {
 				DailyVolume:   dailyVolume,
 				Change:        change,
 				Class:         snapshotLite.Class,
+				YtdBars:       snapshotLite.YtdBars,
 				Volumes:       snapshotLite.Volumes,
 			}
 
