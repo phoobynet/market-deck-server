@@ -16,8 +16,6 @@ func (c *Collection) Refresh() {
 
 	calendarDayLive := c.calendarDayLive.Get()
 
-	logrus.Infof("Refresh Condition %v", calendarDayLive.Condition)
-
 	if calendarDayLive.Condition == calendars.ClosedToday {
 		return
 	}

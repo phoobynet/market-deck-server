@@ -25,7 +25,7 @@ const {
   scoped
 >
   .top-bar {
-    @apply flex justify-between items-center justify-between md:px-4 px-1 bg-slate-900 h-6 md:h-10 bg-black;
+    @apply sticky top-0 flex justify-between items-center justify-between md:px-4 px-1 bg-slate-900 h-6 md:h-10 bg-slate-900;
 
     .condition {
       @apply uppercase text-xxs font-bold tracking-widest;

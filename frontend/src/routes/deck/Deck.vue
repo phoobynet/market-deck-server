@@ -4,18 +4,18 @@
 >
 import { useDeckStore } from '@/routes/deck/useDeckStore'
 import { storeToRefs } from 'pinia'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useMagicKeys } from '@vueuse/core'
 import DeckSearchModal from '@/routes/deck/DeckSearchModal.vue'
+import DeckCard from '@/routes/deck/DeckCard.vue'
 
 const deckStore = useDeckStore()
 
 const {
   snapshots,
   symbols,
+  showModal,
 } = storeToRefs(deckStore)
-
-const showModal = ref<boolean>(false)
 
 const keys = useMagicKeys()
 
@@ -41,33 +41,20 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="w-full px-2 mt-2" v-if="symbols">
-    <table class="text-xs w-full">
-      <thead>
-        <tr class="border-b border-primary">
-          <th class="text-left w-20">Symbol</th>
-          <th class="text-left w-32">Company</th>
-          <th class="text-right w-32">Price</th>
-          <th class="text-right w-32">Prev. Close</th>
-          <th class="text-right w-40">Change</th>
-          <th class="text-right w-24">Low</th>
-          <th class="text-right w-24">High</th>
-          <th class="text-right w-24">Vol</th>
-          <th class="text-right w-24">Avg Vol (65 days)</th>
-          <th class="text-right w-24">YTD Change</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="symbol in symbols"
-          :key="symbol"
-          is="vue:deck-table-row"
-          :symbol="symbol"
-        />
-      </tbody>
-    </table>
+  <main
+    class="w-full px-2 mt-2"
+    v-if="symbols"
+  >
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 w-full gap-1 pt-1">
+      <DeckCard
+        v-for="symbol in symbols"
+        :key="symbol"
+        :symbol="symbol"
+      />
+    </div>
+
     <Teleport to="body">
-      <DeckSearchModal v-if="showModal" />
+      <DeckSearchModal />
     </Teleport>
   </main>
 </template>

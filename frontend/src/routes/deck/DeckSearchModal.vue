@@ -2,7 +2,7 @@
   lang="ts"
   setup
 >
-import { debouncedWatch } from '@vueuse/core'
+import { debouncedWatch, onClickOutside } from '@vueuse/core'
 import { onMounted, ref, watch } from 'vue'
 import Tags from '@/components/Tags.vue'
 import { storeToRefs } from 'pinia'
@@ -17,10 +17,17 @@ const {
   hasAssets,
 } = storeToRefs(assetsStore)
 
+const { showModal } = storeToRefs(deckStore)
+
 const tags = ref<string[]>([])
 const options = new Map<string, string>()
 
 const loading = ref<boolean>(true)
+const modal = ref<HTMLDivElement>()
+
+onClickOutside(modal, () => {
+  showModal.value = false
+})
 
 watch(hasAssets, (newValue) => {
   if (newValue && options.size === 0) {
@@ -52,8 +59,15 @@ const removeTag = (tag: string) => {
 </script>
 
 <template>
-  <div class="deck-search-modal">
-    <div class="bg-slate-900 h-40 min-w-[95vw] border rounded-lg border-slate-700 p-4 flex flex-col gap-2">
+  <div
+    class="deck-search-modal"
+    v-if="showModal"
+  >
+    <div
+      class="bg-slate-900 h-40 min-w-[95vw] border rounded-lg border-slate-700 p-4 flex flex-col gap-2"
+      ref="modal"
+    >
+
       <h2 class="pl-1 text-3xl">
         Search
       </h2>

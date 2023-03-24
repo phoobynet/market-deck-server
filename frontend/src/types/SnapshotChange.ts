@@ -1,4 +1,4 @@
-export interface SnapshotLiteChange {
+export interface SnapshotChange {
   originalValue: number
   newValue: number
   change: number

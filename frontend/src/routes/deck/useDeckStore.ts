@@ -1,14 +1,16 @@
 import { defineStore } from 'pinia'
-import { SnapshotLite } from '@/types/SnapshotLite'
+import { Snapshot } from '@/types/Snapshot'
 import { http } from '@/libs/http'
 
 export interface DeckState {
-  snapshots: Record<string, SnapshotLite>
+  snapshots: Record<string, Snapshot>
+  showModal: boolean
 }
 
 export const useDeckStore = defineStore('deck', {
   state: (): DeckState => ({
     snapshots: {},
+    showModal: false,
   }),
 
   actions: {
@@ -28,7 +30,7 @@ export const useDeckStore = defineStore('deck', {
 const source = new EventSource('http://localhost:3000/api/stream?stream=snapshots')
 
 source.onmessage = (event) => {
-  const { data } = JSON.parse(event.data) as { event: string, data: Record<string, SnapshotLite> }
+  const { data } = JSON.parse(event.data) as { event: string, data: Record<string, Snapshot> }
 
   useDeckStore().snapshots = data
 }
