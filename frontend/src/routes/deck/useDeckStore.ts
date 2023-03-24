@@ -25,7 +25,7 @@ export const useDeckStore = defineStore('deck', {
   },
 })
 
-const source = new EventSource('http://localhost:3000/api/stream?stream=snapshots_lite')
+const source = new EventSource('http://localhost:3000/api/stream?stream=snapshots')
 
 source.onmessage = (event) => {
   const { data } = JSON.parse(event.data) as { event: string, data: Record<string, SnapshotLite> }

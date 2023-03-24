@@ -24,6 +24,7 @@ func New(calendarDayLive *calendars.CalendarDayLive) *Collection {
 		mdClient:        clients.GetMarketDataClient(),
 		assetRepo:       assets.GetRepository(),
 		calendarDayLive: calendarDayLive,
+		collection:      cmap.New[*snapshots.Snapshot](),
 	}
 
 	return s

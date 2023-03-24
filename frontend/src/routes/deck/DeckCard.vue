@@ -2,7 +2,7 @@
   lang="ts"
   setup
 >
-import { useSnapshot } from '@/routes/deck/useSnapshot'
+import { useDeckSnapshot } from '@/routes/deck/useDeckSnapshot'
 
 const props = defineProps<{
   symbol: string
@@ -12,13 +12,13 @@ const {
   snapshot,
   price,
   priceChange,
-  changePercent,
+  changePercentAbs,
   sign,
   prevClose,
   dailyHigh,
   dailyLow,
   dailyVolume,
-} = useSnapshot(props.symbol)
+} = useDeckSnapshot(props.symbol)
 
 </script>
 
@@ -30,7 +30,7 @@ const {
     <div>Price: {{ price }}</div>
     <div>Previous Close: {{ prevClose }}</div>
     <div>Change: {{ priceChange }}</div>
-    <div>Change %: {{ changePercent }}</div>
+    <div>Change %: {{ changePercentAbs }}</div>
     <div>Daily High: {{ dailyHigh }}</div>
     <div>Daily Low: {{ dailyLow }}</div>
     <div>Daily Volume: {{ dailyVolume }}</div>

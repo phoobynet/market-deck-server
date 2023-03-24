@@ -2,9 +2,11 @@ package collection
 
 import (
 	md "github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
+	"github.com/golang-module/carbon/v2"
 	"github.com/phoobynet/market-deck-server/calendars"
 	"github.com/phoobynet/market-deck-server/snapshots"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 // populatePreMarketDailyStats - corrects the daily high, low, and volume for the current day if in pre-market
@@ -15,18 +17,18 @@ func (c *Collection) populatePreMarketDailyStats() {
 		return
 	}
 
-	start := calendarDayUpdate.PreviousMarketDate.AsTime()
+	start := time.UnixMilli(calendarDayUpdate.CurrentMarketDate.PreMarketOpen)
 
 	multiBars, err := c.mdClient.GetMultiBars(
 		c.symbols, md.GetBarsRequest{
-			TimeFrame:  md.OneDay,
+			TimeFrame:  md.OneMin,
 			Adjustment: "split",
 			Start:      start,
-			End:        start,
-			TotalLimit: 1,
+			End:        carbon.Now(carbon.NewYork).ToStdTime(),
 			Feed:       md.SIP,
 		},
 	)
+
 	if err != nil {
 		logrus.Panicf("failed to get daily bars: %v", err)
 	}

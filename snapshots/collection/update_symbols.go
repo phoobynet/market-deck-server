@@ -1,6 +1,8 @@
 package collection
 
-import "github.com/samber/lo"
+import (
+	"github.com/samber/lo"
+)
 
 func (c *Collection) UpdateSymbols(symbols []string) {
 	removedSymbols, addedSymbols := lo.Difference(c.symbols, symbols)
@@ -20,7 +22,8 @@ func (c *Collection) UpdateSymbols(symbols []string) {
 	if len(addedSymbols) > 0 {
 		c.symbols = append(c.symbols, addedSymbols...)
 		c.populateBaseSnapshots(addedSymbols) // l
-		c.populateVolumes()
+		c.populateYTDStats()
+		c.populateHistoricVolumes()
 		c.populatePreMarketDailyStats()
 	}
 }

@@ -2,12 +2,15 @@
   lang="ts"
   setup
 >
-import { useCalendarDayUpdateStore } from '@/stores'
+import { useCalendarDayUpdateStore } from '@/stores/useCalendarDayUpdateStore'
 import { storeToRefs } from 'pinia'
 
 const calendarDayUpdateStore = useCalendarDayUpdateStore()
 
-const { marketTimeFormatted, conditionDescription } = storeToRefs(calendarDayUpdateStore)
+const {
+  marketTimeFormatted,
+  conditionDescription,
+} = storeToRefs(calendarDayUpdateStore)
 </script>
 
 <template>

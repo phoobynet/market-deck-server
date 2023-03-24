@@ -1,5 +1,5 @@
 import { baseUrl } from '@/libs/baseUrl'
-import { useCalendarDayUpdateStore } from '@/stores'
+import { useCalendarDayUpdateStore } from '@/stores/useCalendarDayUpdateStore'
 import { CalendarDayUpdate } from '@/types'
 
 export class CalendarDayUpdateListener {

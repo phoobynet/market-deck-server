@@ -8,7 +8,7 @@ import { formatMoneyNoSymbol } from '@/libs/helpers/formatMoney'
 import numeral from 'numeral'
 import { sumBy } from 'lodash'
 
-export const useSnapshot = (symbol: string) => {
+export const useDeckSnapshot = (symbol: string) => {
   const deckStore = useDeckStore()
 
   const { snapshots } = storeToRefs(deckStore)

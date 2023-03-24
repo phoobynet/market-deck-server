@@ -43,6 +43,7 @@ func GetCalendarDayLive(
 			}
 
 			calendarDayLive.populateMarketDates()
+			calendarDayLive.update()
 
 			go func() {
 				for {
@@ -81,18 +82,18 @@ func (l *CalendarDayLive) update() {
 
 	now := date.GetNewYorkZone().Now()
 
-	nowUtcMicro := now.ToStdTime().UnixMicro()
+	nowUtcMilli := now.ToStdTime().UnixMilli()
 
 	dateKey := now.Format("Y-m-d")
 
 	if marketDate, ok := l.calendarDaysMap.Get(dateKey); ok {
-		if nowUtcMicro >= marketDate.PostMarketClose {
+		if nowUtcMilli >= marketDate.PostMarketClose {
 			l.calendarDayUpdate.Condition = ClosedForTheDay
-		} else if nowUtcMicro >= marketDate.Close {
+		} else if nowUtcMilli >= marketDate.Close {
 			l.calendarDayUpdate.Condition = PostMarket
-		} else if nowUtcMicro >= marketDate.Open {
+		} else if nowUtcMilli >= marketDate.Open {
 			l.calendarDayUpdate.Condition = Open
-		} else if nowUtcMicro >= marketDate.PreMarketOpen {
+		} else if nowUtcMilli >= marketDate.PreMarketOpen {
 			l.calendarDayUpdate.Condition = PreMarket
 		} else {
 

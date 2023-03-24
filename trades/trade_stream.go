@@ -67,7 +67,7 @@ func NewTradeStream(ctx context.Context, publishChan chan<- map[string]*Trade) *
 	return s
 }
 
-func (s *Stream) Update(symbols []string) {
+func (s *Stream) UpdateSymbols(symbols []string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

@@ -36,6 +36,7 @@ watch(esc, (value) => {
 
 onMounted(async () => {
   await deckStore.getSymbols()
+
 })
 </script>
 
@@ -51,8 +52,8 @@ onMounted(async () => {
           <th class="text-right w-40">Change</th>
           <th class="text-right w-24">Low</th>
           <th class="text-right w-24">High</th>
-          <th class="text-right w-24">Volume</th>
-          <th class="text-right w-24">Avg. Volume</th>
+          <th class="text-right w-24">Vol</th>
+          <th class="text-right w-24">Avg Vol (65 days)</th>
           <th class="text-right w-24">YTD Change</th>
         </tr>
       </thead>

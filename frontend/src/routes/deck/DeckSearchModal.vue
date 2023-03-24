@@ -7,9 +7,7 @@ import { onMounted, ref, watch } from 'vue'
 import Tags from '@/components/Tags.vue'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/useAssetsStore'
-import { getSymbols } from '@/libs/getSymbols'
 import { useDeckStore } from '@/routes/deck/useDeckStore'
-import DeckAssetSearch from '@/routes/deck/DeckAssetSearch.vue'
 
 const assetsStore = useAssetsStore()
 const deckStore = useDeckStore()
@@ -44,7 +42,7 @@ debouncedWatch(tags, async (newValue) => {
 })
 
 onMounted(async () => {
-  tags.value = await getSymbols()
+  tags.value = await deckStore.getSymbols()
 })
 
 const removeTag = (tag: string) => {

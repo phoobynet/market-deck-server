@@ -23,7 +23,7 @@ type TechnicalBars struct {
 }
 
 func (t *TechnicalBars) Push(bar bars.Bar) []*TechnicalBar {
-	period := techan.NewTimePeriod(time.UnixMicro(bar.Timestamp), time.Minute)
+	period := techan.NewTimePeriod(time.UnixMilli(bar.Timestamp), time.Minute)
 	candle := techan.NewCandle(period)
 	candle.OpenPrice = big.NewDecimal(bar.Open)
 	candle.ClosePrice = big.NewDecimal(bar.Close)

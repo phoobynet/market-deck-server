@@ -10,16 +10,22 @@ import (
 )
 
 func (c *Collection) populateYTDStats() {
-	startOfDay := carbon.NewCarbon().SetTimezone(carbon.NewYork).StartOfDay()
+	if len(c.symbols) == 0 {
+		return
+	}
+
+	startOfDay := carbon.Now(carbon.NewYork).StartOfDay()
+
+	request := md.GetBarsRequest{
+		TimeFrame:  md.OneMonth,
+		Adjustment: md.Split,
+		Start:      startOfDay.SubYears(1).SubWeeks(1).ToStdTime(),
+		End:        startOfDay.ToStdTime(),
+		Feed:       md.SIP,
+	}
 
 	ytdBarsMonthly, err := c.mdClient.GetMultiBars(
-		c.symbols, md.GetBarsRequest{
-			TimeFrame:  md.OneMonth,
-			Adjustment: md.Split,
-			Start:      startOfDay.SubYear().ToStdTime(),
-			End:        startOfDay.ToStdTime(),
-			Feed:       md.SIP,
-		},
+		c.symbols, request,
 	)
 
 	if err != nil {

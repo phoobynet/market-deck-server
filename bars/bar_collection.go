@@ -75,8 +75,8 @@ func (b *BarCollection) DateRange() (*time.Time, *time.Time) {
 		return nil, nil
 	}
 
-	start := time.UnixMicro(firstBar.Timestamp)
-	end := time.UnixMicro(lastBar.Timestamp)
+	start := time.UnixMilli(firstBar.Timestamp)
+	end := time.UnixMilli(lastBar.Timestamp)
 
 	return &start, &end
 }

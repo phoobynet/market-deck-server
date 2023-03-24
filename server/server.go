@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Server struct {
@@ -57,12 +56,9 @@ func NewServer(
 
 	router.GET(
 		"/api/assets", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-			start := time.Now()
 			all := assetRepository.GetAll()
 
 			_ = writeJSON(w, http.StatusOK, all)
-			end := time.Now()
-			logrus.Infof("GetAll took %s", end.Sub(start))
 		},
 	)
 

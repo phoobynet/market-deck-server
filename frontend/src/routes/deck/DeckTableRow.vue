@@ -2,7 +2,7 @@
   lang="ts"
   setup
 >
-import { useSnapshot } from '@/routes/deck/useSnapshot'
+import { useDeckSnapshot } from '@/routes/deck/useDeckSnapshot'
 import { cleanAssetName } from '@/libs/helpers/cleanAssetName'
 
 const props = defineProps<{
@@ -22,7 +22,7 @@ const {
   avgVolume,
   ytdChangePercentAbs,
   ytdPriceChange,
-} = useSnapshot(props.symbol)
+} = useDeckSnapshot(props.symbol)
 
 </script>
 

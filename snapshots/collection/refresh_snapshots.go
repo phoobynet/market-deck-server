@@ -10,8 +10,13 @@ import (
 
 // Refresh gets the latest snapshots from Alpaca and applies them to the collection
 func (c *Collection) Refresh() {
+	if len(c.symbols) == 0 {
+		return
+	}
 
 	calendarDayLive := c.calendarDayLive.Get()
+
+	logrus.Infof("Refresh Condition %v", calendarDayLive.Condition)
 
 	if calendarDayLive.Condition == calendars.ClosedToday {
 		return
@@ -41,4 +46,6 @@ func (c *Collection) Refresh() {
 			}
 		},
 	)
+
+	c.populatePreMarketDailyStats()
 }
