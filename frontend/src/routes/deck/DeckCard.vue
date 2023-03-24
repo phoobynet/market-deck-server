@@ -4,9 +4,11 @@
 >
 import { useDeckSnapshot } from '@/routes/deck/useDeckSnapshot'
 import { Icon } from '@vicons/utils'
-import { ChartAverage } from '@vicons/carbon'
 import { ArrowBigDown, ArrowBigTop } from '@vicons/tabler'
+import { Close } from '@vicons/carbon'
 import DeckCardLivePrice from '@/routes/deck/DeckCardLivePrice.vue'
+import { useDeckStore } from '@/routes/deck/useDeckStore'
+import { ref } from 'vue'
 
 const props = defineProps<{
   symbol: string
@@ -28,74 +30,100 @@ const {
   ytdSign,
 } = useDeckSnapshot(props.symbol)
 
+const deckStore = useDeckStore()
+
+const closing = ref(false)
+
+const close = () => {
+  closing.value = true
+  deckStore.deleteSymbol(props.symbol)
+}
 </script>
 
 <template>
   <div
     v-if="snapshot"
     class="deck-card"
+    :class="{
+      'opacity-20 pointer-events-none scale-90 delay-200 duration-200': closing,
+    }"
+    :data-sign="sign"
   >
-    <div class="company-info">
-      <div class="symbol">
-        <div class="symbol">{{ snapshot?.symbol }}</div>
-        <div class="exchange">{{ snapshot?.exchange }}</div>
-      </div>
-      <div class="name">{{ companyName }}</div>
+    <div class="bar">
+      <Icon
+        size="25"
+        @click="close"
+        class="cursor-pointer text-slate-100 opacity-60 hover:opacity-100 transition-all "
+        v-if="!closing"
+      >
+        <Close />
+      </Icon>
     </div>
-    <div class="current-price">
-      <div class="currency-symbol">$</div>
-      <div class="amount">
-        <DeckCardLivePrice :price="snapshot?.price" />
-      </div>
-    </div>
-    <div class="previous-close">
-      <div class="label">Prev Close</div>
-      <div class="value">{{ prevClose }}</div>
-    </div>
-    <div
-      class="price-change"
-      :data-sign="sign"
-    >
-      <div class="change-amount">
-        <Icon class="translate-y-0.5">
-          <ArrowBigDown v-if="ytdSign === '-'" />
-          <ArrowBigTop v-else-if="ytdSign === '+'" />
-        </Icon>
-        {{ priceChange }}
-      </div>
-      <div class="change-percent">
-        ({{ changePercentAbs }})
-      </div>
-    </div>
-    <div class="day-range hidden">
-      day range
-    </div>
+    <div class="content">
 
-    <dl class="key-info">
-      <div>
-        <dt>Vol</dt>
-        <dd>{{ dailyVolume }}</dd>
+
+      <div class="company-info">
+        <div class="symbol">
+          <div class="symbol">{{ snapshot?.symbol }}</div>
+          <div class="exchange">{{ snapshot?.exchange }}</div>
+        </div>
+        <div class="name">{{ companyName }}</div>
       </div>
-      <div>
-        <dt>
-          Avg Vol
-        </dt>
-        <dd>{{ avgVolume }}</dd>
+      <div class="current-price">
+        <div class="currency-symbol">$</div>
+        <div class="amount">
+          <DeckCardLivePrice :price="snapshot?.price" />
+        </div>
       </div>
-      <div>
-        <dt>YTD Chg</dt>
-        <dd :data-sign="ytdSign">
-          <Icon
-            size="12"
-            class="translate-y-[1px]"
-          >
+      <div class="previous-close">
+        <div class="label">Prev Close</div>
+        <div class="value">{{ prevClose }}</div>
+      </div>
+      <div
+        class="price-change"
+        :data-sign="sign"
+      >
+        <div class="change-amount">
+          <Icon class="translate-y-0.5">
             <ArrowBigDown v-if="ytdSign === '-'" />
             <ArrowBigTop v-else-if="ytdSign === '+'" />
           </Icon>
-          {{ ytdChangePercentAbs }}
-        </dd>
+          {{ priceChange }}
+        </div>
+        <div class="change-percent">
+          ({{ changePercentAbs }})
+        </div>
       </div>
-    </dl>
+      <div class="day-range hidden">
+        day range
+      </div>
+
+      <dl class="key-info">
+        <div>
+          <dt>Vol</dt>
+          <dd>{{ dailyVolume }}</dd>
+        </div>
+        <div>
+          <dt>
+            Avg Vol
+          </dt>
+          <dd>{{ avgVolume }}</dd>
+        </div>
+        <div>
+          <dt>YTD Chg</dt>
+          <dd :data-sign="ytdSign">
+            <Icon
+              size="12"
+              class="translate-y-[1px]"
+            >
+              <ArrowBigDown v-if="ytdSign === '-'" />
+              <ArrowBigTop v-else-if="ytdSign === '+'" />
+            </Icon>
+            {{ ytdChangePercentAbs }}
+          </dd>
+        </div>
+      </dl>
+    </div>
   </div>
 </template>
 
@@ -104,105 +132,87 @@ const {
   scoped
 >
   .deck-card {
-    @apply bg-slate-900 p-2 grid;
+    @apply transition-all;
 
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(4, auto);
+    .bar {
+      grid-area: bar;
+      @apply w-full h-4 transition-all flex items-center justify-end;
+    }
 
-    grid-template-areas:
+    &[data-sign="+"] {
+      .bar {
+        @apply bg-gradient-to-r from-up to-transparent;
+      }
+    }
+
+    &[data-sign="-"] {
+      .bar {
+        @apply bg-gradient-to-r from-down to-transparent;
+      }
+    }
+
+    .content {
+      @apply bg-slate-900 p-2 grid;
+
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(5, auto);
+
+      grid-template-areas:
+      "bar bar"
       "company-info current-price"
       "previous-close price-change"
       "key-info key-info"
       "day-range day-range";
 
-    .company-info {
-      grid-area: company-info;
-      @apply flex flex-col justify-items-start;
 
-      .symbol {
-        @apply flex text-lg;
+      .company-info {
+        grid-area: company-info;
+        @apply flex flex-col justify-items-start;
 
-        :first-child {
-          @apply text-orange-400;
-        }
+        .symbol {
+          @apply flex text-lg;
 
-        :last-child {
-          &::before {
-            content: ":"
+          :first-child {
+            @apply text-orange-400;
+          }
+
+          :last-child {
+            &::before {
+              content: ":"
+            }
+          }
+
+          .exchange {
+            @apply font-light text-slate-400 pr-1;
+          }
+
+          .symbol {
+            @apply font-bold tracking-widest;
           }
         }
 
-        .exchange {
-          @apply font-light text-slate-400 pr-1;
-        }
-
-        .symbol {
-          @apply font-bold tracking-widest;
+        .name {
+          @apply font-normal text-slate-300 text-xxxs truncate;
+          grid-area: name;
         }
       }
 
-      .name {
-        @apply font-normal text-slate-300 text-xxxs truncate;
-        grid-area: name;
-      }
-    }
+      .current-price {
+        @apply flex gap-0.5 justify-end;
+        grid-area: current-price;
 
-    .current-price {
-      @apply flex gap-0.5 justify-end;
-      grid-area: current-price;
+        .currency-symbol {
+          @apply translate-y-0.5;
+        }
 
-      .currency-symbol {
-        @apply translate-y-0.5;
-      }
-
-      .amount {
-        @apply text-2xl tabular-nums;
-      }
-    }
-
-    .price-change {
-      @apply text-xxs flex gap-1 justify-end tabular-nums;
-      grid-area: price-change;
-
-      &[data-sign="+"] {
-        @apply text-up;
-      }
-
-      &[data-sign="-"] {
-        @apply text-down;
-      }
-    }
-
-    .previous-close {
-      @apply flex text-xxs justify-start gap-1 items-center tabular-nums;
-      grid-area: previous-close;
-
-      .label {
-        @apply text-slate-400;
-        &::after {
-          content: ':'
+        .amount {
+          @apply text-2xl tabular-nums;
         }
       }
-    }
 
-    .day-range {
-      grid-area: day-range;
-      @apply w-full bg-slate-700 text-xxs;
-    }
-
-    .key-info {
-      grid-area: key-info;
-      @apply w-full grid grid-cols-4 items-center gap-1 justify-between mt-2 text-sm;
-
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: 2rem auto;
-
-      dt {
-        @apply uppercase font-light text-center bg-slate-700 text-[0.7rem] leading-snug;
-      }
-
-      dd {
-        @apply tabular-nums text-center text-orange-400;
+      .price-change {
+        @apply text-xxs flex gap-1 justify-end tabular-nums;
+        grid-area: price-change;
 
         &[data-sign="+"] {
           @apply text-up;
@@ -212,6 +222,48 @@ const {
           @apply text-down;
         }
       }
+
+      .previous-close {
+        @apply flex text-xxs justify-start gap-1 items-center tabular-nums;
+        grid-area: previous-close;
+
+        .label {
+          @apply text-slate-400;
+          &::after {
+            content: ':'
+          }
+        }
+      }
+
+      .day-range {
+        grid-area: day-range;
+        @apply w-full bg-slate-700 text-xxs;
+      }
+
+      .key-info {
+        grid-area: key-info;
+        @apply w-full grid grid-cols-4 items-center gap-1 justify-between mt-2 text-sm;
+
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: 2rem auto;
+
+        dt {
+          @apply uppercase font-light text-center bg-slate-700 text-[0.7rem] leading-snug;
+        }
+
+        dd {
+          @apply tabular-nums text-center text-orange-400;
+
+          &[data-sign="+"] {
+            @apply text-up;
+          }
+
+          &[data-sign="-"] {
+            @apply text-down;
+          }
+        }
+      }
     }
   }
+
 </style>

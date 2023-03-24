@@ -3,7 +3,7 @@
   setup
 >
 import { debouncedWatch, onClickOutside } from '@vueuse/core'
-import { onMounted, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import Tags from '@/components/Tags.vue'
 import { storeToRefs } from 'pinia'
 import { useAssetsStore } from '@/stores/useAssetsStore'
@@ -17,7 +17,10 @@ const {
   hasAssets,
 } = storeToRefs(assetsStore)
 
-const { showModal } = storeToRefs(deckStore)
+const {
+  showModal,
+  symbols,
+} = storeToRefs(deckStore)
 
 const tags = ref<string[]>([])
 const options = new Map<string, string>()
@@ -48,14 +51,11 @@ debouncedWatch(tags, async (newValue) => {
   debounce: 500,
 })
 
-onMounted(async () => {
-  tags.value = await deckStore.getSymbols()
+watch(symbols, (newValue) => {
+  tags.value = newValue
+}, {
+  immediate: true,
 })
-
-const removeTag = (tag: string) => {
-  tags.value = tags.value.filter((t) => t !== tag)
-}
-
 </script>
 
 <template>
@@ -64,20 +64,20 @@ const removeTag = (tag: string) => {
     v-if="showModal"
   >
     <div
-      class="bg-slate-900 h-40 min-w-[95vw] border rounded-lg border-slate-700 p-4 flex flex-col gap-2"
+      class="bg-slate-900 h-28 min-w-[60vw] border rounded-lg border-slate-700 px-4 py-2 flex flex-col gap-2"
       ref="modal"
     >
 
-      <h2 class="pl-1 text-3xl">
-        Search
+      <h2 class="pl-1 text-1xl">
+        Asset Search
       </h2>
       <Tags
         :options="options"
         :tags="tags"
         @change="tags = $event"
-        placeholder="Enter symbol and press Space or Enter"
+        placeholder="Search..."
       />
-      <div class="opacity-60">Press Escape to close</div>
+      <div class="text-slate-600 text-xs"><i><strong>Escape</strong></i> to close</div>
     </div>
   </div>
 </template>

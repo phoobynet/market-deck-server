@@ -20,6 +20,10 @@ export const useDeckStore = defineStore('deck', {
     async updateSymbols (symbols: string[] = []) {
       await http.post(`/symbols?symbols=${symbols.join(',')}`, symbols)
     },
+    async deleteSymbol (symbol: string) {
+      const newSymbols = Object.keys(this.snapshots).filter((key) => key !== symbol)
+      await http.post(`/symbols?symbols=${newSymbols.join(',')}`, newSymbols)
+    }
   },
   getters: {
     snapshotsList: (state) => Object.values(state.snapshots),

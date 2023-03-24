@@ -42,6 +42,6 @@ const emit = defineEmits(['deleted'])
   scoped
 >
   .tag {
-    @apply pl-1 pr-0.5 my-0.5 text-base font-semibold border border-orange-500 flex flex-row items-center space-x-1 rounded overflow-hidden;
+    @apply pl-1 pr-0.5 my-0.5 text-base font-semibold flex flex-row items-center space-x-1 rounded overflow-hidden bg-slate-900;
   }
 </style>

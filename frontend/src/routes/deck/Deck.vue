@@ -36,7 +36,6 @@ watch(esc, (value) => {
 
 onMounted(async () => {
   await deckStore.getSymbols()
-
 })
 </script>
 
@@ -45,12 +44,17 @@ onMounted(async () => {
     class="w-full px-2 mt-2"
     v-if="symbols"
   >
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 w-full gap-1 pt-1">
-      <DeckCard
-        v-for="symbol in symbols"
-        :key="symbol"
-        :symbol="symbol"
-      />
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 w-full gap-1.5 pt-1">
+      <transition-group
+        enter-active-class="animate__animated animate__fadeIn animate__faster"
+        leave-active-class="animate__animated animate__fadeOut animate__faster"
+      >
+        <DeckCard
+          v-for="symbol in symbols"
+          :key="symbol"
+          :symbol="symbol"
+        />
+      </transition-group>
     </div>
 
     <Teleport to="body">
