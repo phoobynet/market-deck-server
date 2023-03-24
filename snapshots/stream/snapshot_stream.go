@@ -35,7 +35,7 @@ func New(
 	s := &SnapshotStream{
 		snapshotsCollection:    collection.New(calendarDayLive),
 		deckRepo:               decks.GetRepository(),
-		publishDuration:        time.Second,
+		publishDuration:        1 * time.Second,
 		tradeChan:              make(chan map[string]*trades.Trade, 1_000),
 		refreshSnapshotsTicker: time.NewTicker(time.Second),
 		tradesMap:              tradesMap,

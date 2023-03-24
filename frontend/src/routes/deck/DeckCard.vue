@@ -4,8 +4,9 @@
 >
 import { useDeckSnapshot } from '@/routes/deck/useDeckSnapshot'
 import { Icon } from '@vicons/utils'
-import { ArrowDown, ArrowUp, ChartAverage } from '@vicons/carbon'
+import { ChartAverage } from '@vicons/carbon'
 import { ArrowBigDown, ArrowBigTop } from '@vicons/tabler'
+import DeckCardLivePrice from '@/routes/deck/DeckCardLivePrice.vue'
 
 const props = defineProps<{
   symbol: string
@@ -43,7 +44,9 @@ const {
     </div>
     <div class="current-price">
       <div class="currency-symbol">$</div>
-      <div class="amount">{{ price }}</div>
+      <div class="amount">
+        <DeckCardLivePrice :price="snapshot?.price" />
+      </div>
     </div>
     <div class="previous-close">
       <div class="label">Prev Close</div>
@@ -75,10 +78,7 @@ const {
       </div>
       <div>
         <dt>
-          <Icon>
-            <ChartAverage />
-          </Icon>
-          Vol
+          Avg Vol
         </dt>
         <dd>{{ avgVolume }}</dd>
       </div>
@@ -192,12 +192,13 @@ const {
 
     .key-info {
       grid-area: key-info;
-      @apply w-full grid grid-cols-4 text-[11px] items-center gap-1 justify-between mt-2 text-sm;
+      @apply w-full grid grid-cols-4 items-center gap-1 justify-between mt-2 text-sm;
 
       grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 2rem auto;
 
       dt {
-        @apply uppercase font-semibold text-center bg-slate-700;
+        @apply uppercase font-light text-center bg-slate-700 text-[0.7rem] leading-snug;
       }
 
       dd {
