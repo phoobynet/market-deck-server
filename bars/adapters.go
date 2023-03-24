@@ -3,6 +3,7 @@ package bars
 import (
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata"
 	"github.com/alpacahq/alpaca-trade-api-go/v3/marketdata/stream"
+	"github.com/samber/lo"
 )
 
 func FromStreamBar(bar stream.Bar) Bar {
@@ -29,4 +30,12 @@ func FromMarketDataBar(symbol string, bar marketdata.Bar) Bar {
 		TradeCount: bar.TradeCount,
 		Timestamp:  bar.Timestamp.UnixMilli(),
 	}
+}
+
+func FromMarketDataBars(symbol string, bars []marketdata.Bar) []Bar {
+	return lo.Map[marketdata.Bar, Bar](
+		bars, func(bar marketdata.Bar, _ int) Bar {
+			return FromMarketDataBar(symbol, bar)
+		},
+	)
 }

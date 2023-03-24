@@ -15,15 +15,15 @@ type Stream struct {
 	mu            sync.RWMutex
 	sc            *stream.StocksClient
 	symbols       []string
-	trades        cmap.ConcurrentMap[string, Trade]
+	trades        cmap.ConcurrentMap[string, *Trade]
 	streamChan    chan stream.Trade
 	tradeChan     chan Trade
 	unpublished   bool
 	publishTicker *time.Ticker
-	publishChan   chan<- map[string]Trade
+	publishChan   chan<- map[string]*Trade
 }
 
-func NewTradeStream(ctx context.Context, publishChan chan<- map[string]Trade) *Stream {
+func NewTradeStream(ctx context.Context, publishChan chan<- map[string]*Trade) *Stream {
 	s := &Stream{
 		sc:            clients.GetStocksClient(),
 		symbols:       make([]string, 0),
@@ -32,7 +32,7 @@ func NewTradeStream(ctx context.Context, publishChan chan<- map[string]Trade) *S
 		unpublished:   true,
 		publishTicker: time.NewTicker(1 * time.Second),
 		publishChan:   publishChan,
-		trades:        cmap.New[Trade](),
+		trades:        cmap.New[*Trade](),
 	}
 
 	go func(ctx context.Context, s *Stream) {
@@ -43,7 +43,7 @@ func NewTradeStream(ctx context.Context, publishChan chan<- map[string]Trade) *S
 			case trade := <-s.tradeChan:
 				s.mu.Lock()
 				s.unpublished = true
-				s.trades.Set(trade.Symbol, trade)
+				s.trades.Set(trade.Symbol, &trade)
 				s.mu.Unlock()
 			case <-s.publishTicker.C:
 				s.mu.Lock()
@@ -98,16 +98,4 @@ func (s *Stream) Update(symbols []string) {
 	}
 
 	s.unpublished = true
-}
-
-// GetTradeFor returns the latest trade for the given symbol.
-func (s *Stream) GetTradeFor(symbol string) *Trade {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	if trade, ok := s.trades.Get(symbol); ok {
-		return &trade
-	}
-
-	return nil
 }

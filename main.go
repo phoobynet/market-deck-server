@@ -10,7 +10,7 @@ import (
 	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/messages"
 	"github.com/phoobynet/market-deck-server/server"
-	"github.com/phoobynet/market-deck-server/snapshots"
+	ss "github.com/phoobynet/market-deck-server/snapshots/stream"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -40,7 +40,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	calendarDayLive := calendars.GetCalendarDayLive(ctx, messageBus)
-	snapshotLiteStream := snapshots.NewSnapshotLiteStream(
+	snapshotLiteStream := ss.New(
 		ctx,
 		calendarDayLive,
 		messageBus,

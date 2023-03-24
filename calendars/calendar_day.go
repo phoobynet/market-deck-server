@@ -30,6 +30,10 @@ func NewMarketCalendarDay(calendarDay alpaca.CalendarDay) CalendarDay {
 	}
 }
 
+func (c *CalendarDay) AsTime() time.Time {
+	return carbon.Parse(c.Date, carbon.NewYork).ToStdTime()
+}
+
 func (c *CalendarDay) String() string {
 	return fmt.Sprintf(
 		"Date: %s\n PreMarketOpen: %s\n Open: %s\n Close: %s\n PostMarketClose: %s\n",

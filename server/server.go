@@ -7,7 +7,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/phoobynet/market-deck-server/assets"
 	"github.com/phoobynet/market-deck-server/decks"
-	"github.com/phoobynet/market-deck-server/snapshots"
+	ss "github.com/phoobynet/market-deck-server/snapshots/stream"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -26,7 +26,7 @@ type Server struct {
 func NewServer(
 	config *Config,
 	dist embed.FS,
-	snapshotLiteStream *snapshots.SnapshotStream,
+	snapshotLiteStream *ss.SnapshotStream,
 ) *Server {
 	assetRepository := assets.GetRepository()
 	deckRepository := decks.GetRepository()

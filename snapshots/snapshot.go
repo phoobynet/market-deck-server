@@ -22,8 +22,3 @@ type Snapshot struct {
 	YtdBars       []bars.Bar               `json:"ytdBars"`
 	YtdChange     numbers.NumberDiffResult `json:"ytdChange"`
 }
-
-type SnapshotVolume struct {
-	Date   string  `json:"date"`
-	Volume float64 `json:"vol"`
-}
