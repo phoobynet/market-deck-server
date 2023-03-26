@@ -12,7 +12,7 @@ import (
 type FactQuery struct {
 	Ticker          string
 	FinancialYear   int
-	FinancialPeriod int
+	FinancialPeriod string
 	Form            string
 	Concept         string
 }
@@ -40,13 +40,13 @@ func GetRepository() *Repository {
 func (r *Repository) Find(query FactQuery) []Fact {
 	var queryResults []Fact
 
-	sql := "select * from tickers where ticker = @Ticker"
+	sql := "select * from facts where ticker = @Ticker"
 
 	if query.FinancialYear != 0 {
 		sql += " and financial_year = @FinancialYear"
 	}
 
-	if query.FinancialPeriod != 0 {
+	if query.FinancialPeriod != "" {
 		sql += " and financial_period = @FinancialPeriod"
 	}
 
@@ -57,6 +57,8 @@ func (r *Repository) Find(query FactQuery) []Fact {
 	if query.Concept != "" {
 		sql += " and concept = @Concept"
 	}
+
+	sql += " order by end_date desc"
 
 	if err := r.db.Model(&Fact{}).Raw(sql, query).Find(&queryResults).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -70,9 +72,9 @@ func (r *Repository) Find(query FactQuery) []Fact {
 }
 
 func (r *Repository) HasTicker(ticker string, ttl time.Duration) bool {
-	var factUnit Fact
+	var fact Fact
 
-	if err := r.db.Model(&Fact{}).First(&factUnit).Error; err != nil {
+	if err := r.db.Model(&Fact{}).Where("ticker = ?", strings.ToUpper(ticker)).First(&fact).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false
 		} else {
@@ -80,7 +82,7 @@ func (r *Repository) HasTicker(ticker string, ttl time.Duration) bool {
 		}
 	}
 
-	if time.Now().Sub(factUnit.UpdatedAt) > ttl {
+	if time.Now().Sub(fact.UpdatedAt) > ttl {
 		if err := r.db.Model(&Fact{}).Where(
 			"ticker = ?",
 			strings.ToUpper(ticker),

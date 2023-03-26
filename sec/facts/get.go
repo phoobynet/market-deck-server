@@ -24,6 +24,8 @@ func Get(query FactQuery) []Fact {
 
 	url := fmt.Sprintf("https://data.sec.gov/api/xbrl/companyfacts/CIK%s.json", secTicker.FullCIK())
 
+	logrus.Infof("Getting facts for %s from %s\n", query.Ticker, url)
+
 	data, err := sechttp.GetWithCache(url, ttl)
 
 	if err != nil {
@@ -34,5 +36,5 @@ func Get(query FactQuery) []Fact {
 
 	r.BulkInsert(facts)
 
-	return facts
+	return Get(query)
 }

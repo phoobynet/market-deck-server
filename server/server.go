@@ -66,39 +66,29 @@ func NewServer(
 	router.GET(
 		"/api/sec/:ticker/facts",
 		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-			factsByTicker := facts.Get(ps.ByName("ticker"))
-
-			query := r.URL.Query()
-			form := query.Get("form")
-			fy := query.Get("fy")
-			fp := query.Get("fp")
-
-			filteredFacts := make([]facts.Fact, 0)
-
-			for _, fact := range factsByTicker {
-				if len(form) > 0 && fact.Form == form {
-					filteredFacts = append(filteredFacts, fact)
-				}
-
-				if len(fy) > 0 {
-					fyInt, err := strconv.Atoi(fy)
-
-					if err != nil {
-						_ = writeErr(w, http.StatusBadRequest, err)
-					}
-
-					if fact.FinancialYear == fyInt {
-						filteredFacts = append(filteredFacts, fact)
-					}
-
-				}
-
-				if len(fp) > 0 && fact.FinancialPeriod == fp {
-					filteredFacts = append(filteredFacts, fact)
-				}
+			query := facts.FactQuery{
+				Ticker:          ps.ByName("ticker"),
+				FinancialYear:   0,
+				FinancialPeriod: r.URL.Query().Get("fp"),
+				Form:            r.URL.Query().Get("form"),
+				Concept:         r.URL.Query().Get("concept"),
 			}
 
-			_ = writeJSON(w, http.StatusOK, filteredFacts)
+			fy := r.URL.Query().Get("fy")
+
+			if len(fy) > 0 {
+				fyInt, err := strconv.Atoi(fy)
+
+				if err != nil {
+					_ = writeErr(w, http.StatusBadRequest, err)
+				}
+
+				query.FinancialYear = fyInt
+			}
+
+			queryResult := facts.Get(query)
+
+			_ = writeJSON(w, http.StatusOK, queryResult)
 		},
 	)
 
