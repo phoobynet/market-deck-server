@@ -11,7 +11,9 @@ var once sync.Once
 
 var db *gorm.DB
 
-func GetDB() *gorm.DB {
+// Get returns a pointer to the database connection
+// The connection is created on the first call to this function
+func Get() *gorm.DB {
 	// e.g. a path option
 	once.Do(
 		func() {

@@ -1,10 +1,13 @@
 package cache
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"time"
+)
 
 type Item struct {
 	gorm.Model
-	URL    string `gorm:"primaryKey"`
-	Data   string `gorm:"type:text"`
-	TTLSec int64
+	URL  string `gorm:"primaryKey"`
+	Data []byte
+	TTL  time.Duration
 }

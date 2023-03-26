@@ -20,7 +20,7 @@ func GetRepository() *Repository {
 	once.Do(
 		func() {
 			r = &Repository{
-				db: database.GetDB(),
+				db: database.Get(),
 			}
 		},
 	)
@@ -37,7 +37,7 @@ func (r *Repository) Get(url string) *Item {
 			return nil
 		}
 	} else {
-		threshold := item.UpdatedAt.Add(time.Duration(item.TTLSec))
+		threshold := item.UpdatedAt.Add(item.TTL)
 
 		if time.Now().After(threshold) {
 			if err := r.db.Model(&Item{}).Delete(&item).Error; err != nil {
@@ -49,11 +49,11 @@ func (r *Repository) Get(url string) *Item {
 	return &item
 }
 
-func (r *Repository) Set(url string, data string, ttlSec int64) {
+func (r *Repository) Set(url string, data []byte, ttl time.Duration) {
 	item := &Item{
-		URL:    strings.ToLower(url),
-		Data:   data,
-		TTLSec: ttlSec,
+		URL:  strings.ToLower(url),
+		Data: data,
+		TTL:  ttl,
 	}
 
 	r.db.Model(&Item{}).Create(item)

@@ -7,6 +7,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/phoobynet/market-deck-server/assets"
 	"github.com/phoobynet/market-deck-server/decks"
+	"github.com/phoobynet/market-deck-server/sec/concept"
 	ss "github.com/phoobynet/market-deck-server/snapshots/stream"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
@@ -63,17 +64,11 @@ func NewServer(
 	)
 
 	router.GET(
-		"/api/symbols/query", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-			query := r.URL.Query().Get("query")
+		"/api/sec/companyfacts/:ticker/shares-outstanding",
+		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+			result := concept.SharesOutstanding(ps.ByName("ticker"))
 
-			if query == "" {
-				_ = writeErr(w, http.StatusBadRequest, fmt.Errorf("query parameter is required"))
-				return
-			}
-
-			results := assetRepository.Search(query)
-
-			_ = writeJSON(w, http.StatusOK, results)
+			_ = writeJSON(w, http.StatusOK, result)
 		},
 	)
 

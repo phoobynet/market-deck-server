@@ -5,10 +5,12 @@ import (
 	"embed"
 	"flag"
 	"github.com/phoobynet/market-deck-server/assets"
+	"github.com/phoobynet/market-deck-server/cache"
 	"github.com/phoobynet/market-deck-server/calendars"
 	"github.com/phoobynet/market-deck-server/database"
 	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/messages"
+	"github.com/phoobynet/market-deck-server/sec/tickers"
 	"github.com/phoobynet/market-deck-server/server"
 	ss "github.com/phoobynet/market-deck-server/snapshots/stream"
 	"github.com/sirupsen/logrus"
@@ -36,6 +38,14 @@ func main() {
 	config := loadConfig()
 
 	migrateDatabase()
+
+	logrus.Infof("Populating assets...")
+	assets.Populate()
+	logrus.Infof("Populating assets...DONE")
+
+	logrus.Infof("Populating tickers...")
+	tickers.Populate()
+	logrus.Infof("Populating tickers...DONE")
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -67,10 +77,12 @@ func main() {
 }
 
 func migrateDatabase() {
-	db := database.GetDB()
+	db := database.Get()
 	fatal(db.AutoMigrate(&assets.Asset{}))
 	fatal(db.AutoMigrate(&calendars.CalendarDay{}))
 	fatal(db.AutoMigrate(&decks.Deck{}))
+	fatal(db.AutoMigrate(&tickers.Ticker{}))
+	fatal(db.AutoMigrate(&cache.Item{}))
 }
 
 func loadConfig() *server.Config {

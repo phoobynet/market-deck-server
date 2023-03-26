@@ -20,7 +20,7 @@ func GetRepository() *DeckRepository {
 	deckRepositoryOnce.Do(
 		func() {
 			deckRepository = &DeckRepository{
-				db: database.GetDB(),
+				db: database.Get(),
 			}
 
 			if deckRepository.Count() == 0 {

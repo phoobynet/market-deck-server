@@ -31,7 +31,7 @@ func GetRepository() *Repository {
 			calendarRepository = &Repository{
 				alpacaClient:    clients.GetAlpacaClient(),
 				populated:       false,
-				db:              database.GetDB(),
+				db:              database.Get(),
 				calendarDays:    make([]CalendarDay, 0),
 				calendarDaysMap: cmap.New[CalendarDay](),
 				calendarDates:   make([]string, 0),

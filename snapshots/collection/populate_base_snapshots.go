@@ -36,7 +36,7 @@ func (c *Collection) populateBaseSnapshots(symbols []string) {
 	}
 
 	for symbol, snapshot := range multiSnapshots {
-		asset := c.assetRepo.Get(symbol)
+		asset := c.assetRepo.GetBySymbol(symbol)
 
 		prevDailyBar := snapshot.PrevDailyBar
 
