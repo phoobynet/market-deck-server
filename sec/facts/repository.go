@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+type FactQuery struct {
+	Ticker          string
+	FinancialYear   int
+	FinancialPeriod int
+	Form            string
+	Concept         string
+}
+
 type Repository struct {
 	db *gorm.DB
 }
@@ -29,19 +37,36 @@ func GetRepository() *Repository {
 	return repository
 }
 
-func (r *Repository) GetByTicker(ticker string) []Fact {
-	var factUnits []Fact
+func (r *Repository) Find(query FactQuery) []Fact {
+	var queryResults []Fact
 
-	if err := r.db.Model(&Fact{}).Where("ticker = ?", strings.ToUpper(ticker)).Find(&factUnits).Error; err != nil {
+	sql := "select * from tickers where ticker = @Ticker"
 
-		if err == gorm.ErrRecordNotFound {
-			return nil
-		}
-
-		logrus.Panicf("Error getting fact units for ticker %s: %v", ticker, err)
+	if query.FinancialYear != 0 {
+		sql += " and financial_year = @FinancialYear"
 	}
 
-	return factUnits
+	if query.FinancialPeriod != 0 {
+		sql += " and financial_period = @FinancialPeriod"
+	}
+
+	if query.Form != "" {
+		sql += " and form = @Form"
+	}
+
+	if query.Concept != "" {
+		sql += " and concept = @Concept"
+	}
+
+	if err := r.db.Model(&Fact{}).Raw(sql, query).Find(&queryResults).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil
+		} else {
+			logrus.Panicf("Error gett: %v", err)
+		}
+	}
+
+	return queryResults
 }
 
 func (r *Repository) HasTicker(ticker string, ttl time.Duration) bool {

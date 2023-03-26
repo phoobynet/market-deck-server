@@ -2,12 +2,13 @@ package facts
 
 import (
 	"encoding/json"
+	"github.com/phoobynet/market-deck-server/sec/tickers"
 	"github.com/sirupsen/logrus"
 )
 
 type jObject = map[string]interface{}
 
-func parseFacts(data []byte) []Fact {
+func parseFacts(ticker *tickers.Ticker, data []byte) []Fact {
 
 	var companyFacts jObject
 
@@ -27,7 +28,7 @@ func parseFacts(data []byte) []Fact {
 
 				for _, factUnitJObject := range facts.([]interface{}) {
 					factUnits = append(
-						factUnits, parseFactUnit(root, conceptKey, unitType, factUnitJObject.(jObject)),
+						factUnits, parseFactUnit(ticker, root, conceptKey, unitType, factUnitJObject.(jObject)),
 					)
 				}
 			}
@@ -47,14 +48,21 @@ func pickValue[T any](j jObject, key string) T {
 	return noop
 }
 
-func parseFactUnit(root string, conceptKey string, unitType string, factUnitJObject jObject) Fact {
+func parseFactUnit(
+	ticker *tickers.Ticker,
+	root string,
+	conceptKey string,
+	unitType string,
+	factUnitJObject jObject,
+) Fact {
 	return Fact{
-		Label:           pickValue[string](factUnitJObject, "label"),
+		CIK:             ticker.CIK,
+		Ticker:          ticker.Ticker,
 		Root:            root,
 		Concept:         conceptKey,
 		UnitType:        unitType,
 		EndDate:         pickValue[string](factUnitJObject, "end"),
-		Value:           pickValue[string](factUnitJObject, "val"),
+		Value:           pickValue[float64](factUnitJObject, "val"),
 		AccessionNumber: pickValue[string](factUnitJObject, "accn"),
 		FinancialYear:   int(factUnitJObject["fy"].(float64)),
 		FinancialPeriod: pickValue[string](factUnitJObject, "fp"),

@@ -10,6 +10,7 @@ import (
 	"github.com/phoobynet/market-deck-server/database"
 	"github.com/phoobynet/market-deck-server/decks"
 	"github.com/phoobynet/market-deck-server/messages"
+	"github.com/phoobynet/market-deck-server/sec/facts"
 	"github.com/phoobynet/market-deck-server/sec/tickers"
 	"github.com/phoobynet/market-deck-server/server"
 	ss "github.com/phoobynet/market-deck-server/snapshots/stream"
@@ -83,6 +84,7 @@ func migrateDatabase() {
 	fatal(db.AutoMigrate(&decks.Deck{}))
 	fatal(db.AutoMigrate(&tickers.Ticker{}))
 	fatal(db.AutoMigrate(&cache.Item{}))
+	fatal(db.AutoMigrate(&facts.Fact{}))
 }
 
 func loadConfig() *server.Config {

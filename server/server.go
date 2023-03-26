@@ -7,7 +7,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/phoobynet/market-deck-server/assets"
 	"github.com/phoobynet/market-deck-server/decks"
-	"github.com/phoobynet/market-deck-server/sec/concept"
+	"github.com/phoobynet/market-deck-server/sec/facts"
 	ss "github.com/phoobynet/market-deck-server/snapshots/stream"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
@@ -64,11 +64,41 @@ func NewServer(
 	)
 
 	router.GET(
-		"/api/sec/companyfacts/:ticker/shares-outstanding",
+		"/api/sec/:ticker/facts",
 		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-			result := concept.SharesOutstanding(ps.ByName("ticker"))
+			factsByTicker := facts.Get(ps.ByName("ticker"))
 
-			_ = writeJSON(w, http.StatusOK, result)
+			query := r.URL.Query()
+			form := query.Get("form")
+			fy := query.Get("fy")
+			fp := query.Get("fp")
+
+			filteredFacts := make([]facts.Fact, 0)
+
+			for _, fact := range factsByTicker {
+				if len(form) > 0 && fact.Form == form {
+					filteredFacts = append(filteredFacts, fact)
+				}
+
+				if len(fy) > 0 {
+					fyInt, err := strconv.Atoi(fy)
+
+					if err != nil {
+						_ = writeErr(w, http.StatusBadRequest, err)
+					}
+
+					if fact.FinancialYear == fyInt {
+						filteredFacts = append(filteredFacts, fact)
+					}
+
+				}
+
+				if len(fp) > 0 && fact.FinancialPeriod == fp {
+					filteredFacts = append(filteredFacts, fact)
+				}
+			}
+
+			_ = writeJSON(w, http.StatusOK, filteredFacts)
 		},
 	)
 
