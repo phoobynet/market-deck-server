@@ -1,6 +1,8 @@
 package facts
 
 type FactSummary struct {
+	Ticker                       string  `json:"ticker"`
+	CIK                          int     `json:"cik"`
 	Year                         int     `json:"year"`
 	Period                       string  `json:"period"`
 	CommonStockSharesOutstanding float64 `json:"outstandingShares"` // concept: EntityCommonStockSharesOutstanding
