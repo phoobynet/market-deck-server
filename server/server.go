@@ -7,6 +7,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/phoobynet/market-deck-server/assets"
 	"github.com/phoobynet/market-deck-server/decks"
+	"github.com/phoobynet/market-deck-server/scrapers/yahoo"
 	"github.com/phoobynet/market-deck-server/sec/facts"
 	ss "github.com/phoobynet/market-deck-server/snapshots/stream"
 	"github.com/rs/cors"
@@ -226,6 +227,18 @@ func NewServer(
 			}
 
 			_ = writeJSON(w, http.StatusOK, update)
+		},
+	)
+
+	router.GET(
+		"/api/scraped/:ticker", func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+			summary, err := yahoo.GetTickerSummary(ps.ByName("ticker"))
+
+			if err != nil {
+				_ = writeErr(w, http.StatusInternalServerError, err)
+			}
+
+			_ = writeJSON(w, http.StatusOK, summary)
 		},
 	)
 

@@ -1,4 +1,4 @@
-package http
+package sechttp
 
 import (
 	"github.com/gojek/heimdall/v7/httpclient"

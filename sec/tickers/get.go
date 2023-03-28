@@ -1,7 +1,7 @@
 package tickers
 
 import (
-	secclient "github.com/phoobynet/market-deck-server/sec/http"
+	secclient "github.com/phoobynet/market-deck-server/sec/sechttp"
 	"github.com/sirupsen/logrus"
 	"time"
 )

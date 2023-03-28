@@ -2,7 +2,7 @@ package facts
 
 import (
 	"fmt"
-	sechttp "github.com/phoobynet/market-deck-server/sec/http"
+	sechttp "github.com/phoobynet/market-deck-server/sec/sechttp"
 	"github.com/phoobynet/market-deck-server/sec/tickers"
 	"github.com/sirupsen/logrus"
 )

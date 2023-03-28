@@ -3,7 +3,9 @@ module github.com/phoobynet/market-deck-server
 go 1.20
 
 require (
+	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/alpacahq/alpaca-trade-api-go/v3 v3.0.1
+	github.com/gojek/heimdall/v7 v7.0.2
 	github.com/golang-module/carbon/v2 v2.2.3
 	github.com/json-iterator/go v1.1.12
 	github.com/julienschmidt/httprouter v1.3.0
@@ -23,8 +25,8 @@ require (
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/gojek/heimdall/v7 v7.0.2 // indirect
 	github.com/gojek/valkyrie v0.0.0-20180215180059-6aee720afcdf // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

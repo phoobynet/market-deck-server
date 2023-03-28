@@ -1,6 +1,7 @@
-package http
+package sechttp
 
 import (
+	"github.com/phoobynet/market-deck-server/cache"
 	"github.com/sirupsen/logrus"
 	"time"
 )
@@ -8,7 +9,8 @@ import (
 // GetWithCache - Attempts to retrieve the data from the cache repository; otherwise, a direct call is made to the SEC.
 // The SEC response will be stored with a TTL
 func GetWithCache(url string, ttl time.Duration) ([]byte, error) {
-	result := cacheRepository.Get(url)
+	cacheRepo := cache.GetRepository()
+	result := cacheRepo.Get(url)
 
 	if result != nil {
 		logrus.Printf("Cache hit for %s", url)
@@ -21,7 +23,7 @@ func GetWithCache(url string, ttl time.Duration) ([]byte, error) {
 		return nil, err
 	}
 
-	cacheRepository.Set(url, data, ttl)
+	cacheRepo.Set(url, data, ttl)
 
 	return data, nil
 }

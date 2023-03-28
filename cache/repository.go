@@ -9,22 +9,22 @@ import (
 	"time"
 )
 
-var once sync.Once
+var cacheRepositoryOnce sync.Once
+var cacheRepository *Repository
 
 type Repository struct {
 	db *gorm.DB
 }
 
 func GetRepository() *Repository {
-	var r *Repository
-	once.Do(
+	cacheRepositoryOnce.Do(
 		func() {
-			r = &Repository{
+			cacheRepository = &Repository{
 				db: database.Get(),
 			}
 		},
 	)
-	return r
+	return cacheRepository
 }
 
 func (r *Repository) Get(url string) *Item {
